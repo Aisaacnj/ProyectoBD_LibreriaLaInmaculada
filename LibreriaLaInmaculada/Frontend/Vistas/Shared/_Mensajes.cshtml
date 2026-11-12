@@ -1,0 +1,15 @@
+@* Avisos de "se guardó" o "no se pudo", enviados por los controladores con TempData *@
+@if (TempData["Mensaje"] is string mensaje)
+{
+    <div class="aviso exito" role="status">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Activar" /></svg>
+        <span>@mensaje</span>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="aviso error" role="alert">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Alerta" /></svg>
+        <span>@error</span>
+    </div>
+}

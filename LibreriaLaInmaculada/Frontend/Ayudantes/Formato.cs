@@ -34,6 +34,18 @@ public static class Formato
     public static string FechaHora(DateTime f) =>
         f.ToString("dd/MM/yyyy ", Ni) + f.ToString("h:mm", Ni) + (f.Hour < 12 ? " a. m." : " p. m.");
 
+    /// <summary>"12/11/2026"</summary>
+    public static string Fecha(DateTime f) => f.ToString("dd/MM/yyyy", Ni);
+
+    /// <summary>"Jorge Porras" → "JP"</summary>
+    public static string Iniciales(string? nombre)
+    {
+        var palabras = (nombre ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (palabras.Length == 0) return "?";
+        if (palabras.Length == 1) return palabras[0].Substring(0, Math.Min(2, palabras[0].Length)).ToUpper();
+        return $"{palabras[0][0]}{palabras[1][0]}".ToUpper();
+    }
+
     /// <summary>Número para CSS (siempre con punto decimal).</summary>
     public static string Css(double valor) => valor.ToString("0.##", CultureInfo.InvariantCulture);
 }

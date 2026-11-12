@@ -1,0 +1,58 @@
+@model ProveedorFormViewModel
+@{
+    ViewData["Title"] = Model.EsNuevo ? "Nuevo proveedor" : "Editar proveedor";
+    ViewData["Descripcion"] = Model.EsNuevo
+        ? "Solo el nombre es obligatorio. Los demás datos ayudan a contactarlo."
+        : Model.Nombre;
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver a proveedores
+    </a>
+}
+
+<section class="tarjeta formulario-tarjeta">
+    <form method="post" asp-action="@(Model.EsNuevo ? "Nuevo" : "Editar")" class="formulario">
+        <input type="hidden" asp-for="IdProveedor" />
+        <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+        <div class="campo">
+            <label asp-for="Nombre"></label>
+            <input asp-for="Nombre" placeholder="Por ejemplo: Librería Jardín – Bolonia" autofocus />
+            <span asp-validation-for="Nombre" class="error-campo"></span>
+        </div>
+
+        <div class="formulario-grid">
+            <div class="campo">
+                <label asp-for="ContactoNombre"></label>
+                <input asp-for="ContactoNombre" placeholder="Opcional" />
+                <span asp-validation-for="ContactoNombre" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="Telefono"></label>
+                <input asp-for="Telefono" type="tel" placeholder="Por ejemplo: 2266-0000" />
+                <span asp-validation-for="Telefono" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" type="email" placeholder="Opcional" />
+                <span asp-validation-for="Email" class="error-campo"></span>
+            </div>
+        </div>
+
+        <div class="campo">
+            <label asp-for="Direccion"></label>
+            <textarea asp-for="Direccion" rows="2" placeholder="Opcional"></textarea>
+            <span asp-validation-for="Direccion" class="error-campo"></span>
+        </div>
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-principal">
+                @(Model.EsNuevo ? "Agregar proveedor" : "Guardar cambios")
+            </button>
+            <a class="boton boton-secundario" asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>

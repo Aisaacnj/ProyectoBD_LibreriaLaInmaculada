@@ -1,0 +1,54 @@
+@model UsuarioNuevoViewModel
+@{
+    ViewData["Title"] = "Nuevo usuario";
+    ViewData["Descripcion"] = "Entregue la contraseña a la persona; podrá entrar en cuanto la guarde.";
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver a usuarios
+    </a>
+}
+
+<section class="tarjeta formulario-tarjeta">
+    <form method="post" asp-action="Nuevo" class="formulario" autocomplete="off">
+        <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+        <div class="formulario-grid">
+            <div class="campo">
+                <label asp-for="NombreCompleto"></label>
+                <input asp-for="NombreCompleto" placeholder="Por ejemplo: María López" autofocus />
+                <span asp-validation-for="NombreCompleto" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="Usuario"></label>
+                <input asp-for="Usuario" placeholder="Por ejemplo: mlopez" autocapitalize="none" spellcheck="false" />
+                <span class="ayuda">Sin espacios ni tildes.</span>
+                <span asp-validation-for="Usuario" class="error-campo"></span>
+            </div>
+        </div>
+
+        <partial name="_SelectorRol" model="(Model.Rol ?? Roles.Vendedor)" />
+        <span asp-validation-for="Rol" class="error-campo"></span>
+
+        <div class="formulario-grid">
+            <div class="campo">
+                <label asp-for="Password"></label>
+                <input asp-for="Password" autocomplete="new-password" />
+                <span class="ayuda">Al menos 8 caracteres.</span>
+                <span asp-validation-for="Password" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="ConfirmarPassword"></label>
+                <input asp-for="ConfirmarPassword" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmarPassword" class="error-campo"></span>
+            </div>
+        </div>
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-principal">Crear usuario</button>
+            <a class="boton boton-secundario" asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>

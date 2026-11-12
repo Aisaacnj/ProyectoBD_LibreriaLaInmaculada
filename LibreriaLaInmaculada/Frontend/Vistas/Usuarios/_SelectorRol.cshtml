@@ -1,0 +1,19 @@
+@model string
+@* Elección de rol con dos tarjetas. El campo se llama "Rol" en Nuevo y en Editar. *@
+<fieldset class="campo selector-rol">
+    <legend>Rol</legend>
+    <label class="opcion-rol">
+        <input type="radio" name="Rol" value="@Roles.Vendedor" checked="@(Model == Roles.Vendedor)" />
+        <span class="opcion-rol-caja">
+            <span class="fuerte">Vendedor</span>
+            <span class="texto-suave">Vende, ve sus ventas y consulta el inventario (sin costos).</span>
+        </span>
+    </label>
+    <label class="opcion-rol">
+        <input type="radio" name="Rol" value="@Roles.Administrador" checked="@(Model == Roles.Administrador)" />
+        <span class="opcion-rol-caja">
+            <span class="fuerte">Administrador</span>
+            <span class="texto-suave">Todo lo anterior, más compras, pérdidas, proveedores, reportes y usuarios.</span>
+        </span>
+    </label>
+</fieldset>

@@ -16,7 +16,18 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     WebRootPath = "Frontend/wwwroot"
 });
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(opciones =>
+{
+    // Solo se exige lo que tiene [Required] (con su mensaje en español)
+    opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+
+    // Mensajes de error en español cuando un dato no se puede leer (por ejemplo, letras en un precio)
+    var mensajes = opciones.ModelBindingMessageProvider;
+    mensajes.SetValueMustNotBeNullAccessor(_ => "Este dato es obligatorio.");
+    mensajes.SetAttemptedValueIsInvalidAccessor((valor, campo) => $"«{valor}» no es un valor válido.");
+    mensajes.SetValueIsInvalidAccessor(valor => $"«{valor}» no es un valor válido.");
+    mensajes.SetValueMustBeANumberAccessor(campo => "Escriba un número.");
+});
 
 // Las vistas viven en Frontend/Vistas (en vez de la carpeta Views por defecto)
 builder.Services.Configure<RazorViewEngineOptions>(opciones =>
@@ -51,6 +62,9 @@ builder.Services.AddAuthorization(opciones =>
 builder.Services.AddSingleton<Db>();
 builder.Services.AddScoped<UsuarioRepositorio>();
 builder.Services.AddScoped<InicioRepositorio>();
+builder.Services.AddScoped<ArticuloRepositorio>();
+builder.Services.AddScoped<CategoriaRepositorio>();
+builder.Services.AddScoped<ProveedorRepositorio>();
 
 var app = builder.Build();
 

@@ -21,5 +21,13 @@ public static class Iconos
     public const string Subida = "M3 17l6-6 4 4 8-8M15 7h6v6";
     public const string Alerta = "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z";
     public const string Candado = "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4";
-    public const string Herramienta = "M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z";
+    public const string Mas = "M12 5v14M5 12h14";
+    public const string Editar = "M12 20h9M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z";
+    public const string Buscar = "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3";
+    public const string Llave = "M15 7a3 3 0 1 1 0 .01M13.5 9.5 4 19v2h3v-2h2v-2h2l2.5-2.5M15 4a5 5 0 1 1-4.6 7";
+    public const string Etiqueta = "M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8zM7 7h.01";
+    public const string Volver = "M19 12H5M12 19l-7-7 7-7";
+    public const string Activar = "M20 6 9 17l-5-5";
+    public const string Desactivar = "M18 6 6 18M6 6l12 12";
+    public const string Herramienta ="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z";
 }

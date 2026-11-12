@@ -1,0 +1,104 @@
+@model ProveedoresIndexViewModel
+@{
+    ViewData["Title"] = "Proveedores";
+    ViewData["Descripcion"] = "Distribuidoras a las que la librería les compra. Un proveedor desactivado ya no aparece al registrar compras.";
+}
+
+@section BannerDerecha {
+    <a class="banner-accion" asp-action="Nuevo">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+        Nuevo proveedor
+    </a>
+}
+
+<section class="tarjeta" aria-labelledby="titulo-proveedores">
+    <h2 id="titulo-proveedores" class="solo-lector">Lista de proveedores</h2>
+
+    <form method="get" asp-action="Index" class="filtros">
+        <div class="campo crece">
+            <label for="buscar">Buscar</label>
+            <div class="con-icono">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Buscar" /></svg>
+                <input id="buscar" name="buscar" type="search" value="@Model.Buscar" placeholder="Nombre del proveedor o persona de contacto" />
+            </div>
+        </div>
+        <label class="casilla">
+            <input type="checkbox" name="inactivos" value="true" checked="@Model.MostrarInactivos" />
+            Mostrar desactivados
+        </label>
+        <div class="filtros-botones">
+            <button type="submit" class="boton boton-principal chico">Filtrar</button>
+            @if (Model.Buscar != null || Model.MostrarInactivos)
+            {
+                <a class="boton boton-secundario chico" asp-action="Index">Quitar filtros</a>
+            }
+        </div>
+    </form>
+
+    @if (Model.Proveedores.Count == 0)
+    {
+        <p class="vacio-lista">No hay proveedores con esos filtros.</p>
+    }
+    else
+    {
+        <div class="tabla-caja">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th class="derecha">Compras</th>
+                        <th><span class="solo-lector">Acciones</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Proveedores)
+                    {
+                        <tr class="@(p.Activo ? "" : "fila-inactiva")">
+                            <td>
+                                <span class="fuerte">@p.Nombre</span>
+                                @if (!p.Activo)
+                                {
+                                    <span class="insignia gris">Desactivado</span>
+                                }
+                                @if (p.Direccion != null)
+                                {
+                                    <span class="texto-pequeno">@p.Direccion</span>
+                                }
+                            </td>
+                            <td>@(p.ContactoNombre ?? "—")</td>
+                            <td class="sin-saltos">@(p.Telefono ?? "—")</td>
+                            <td>
+                                @if (p.Email != null)
+                                {
+                                    <a href="mailto:@p.Email">@p.Email</a>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td class="derecha">@p.TotalCompras</td>
+                            <td>
+                                <div class="acciones">
+                                    <a class="boton-tabla" asp-action="Editar" asp-route-id="@p.IdProveedor" title="Editar" aria-label="Editar @p.Nombre">
+                                        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Editar" /></svg>
+                                    </a>
+                                    <form method="post" asp-action="CambiarEstado" asp-route-id="@p.IdProveedor">
+                                        <button type="submit" class="boton-tabla @(p.Activo ? "peligro" : "exito")"
+                                                title="@(p.Activo ? "Desactivar" : "Activar")"
+                                                aria-label="@(p.Activo ? "Desactivar" : "Activar") @p.Nombre">
+                                            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@(p.Activo ? Iconos.Desactivar : Iconos.Activar)" /></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

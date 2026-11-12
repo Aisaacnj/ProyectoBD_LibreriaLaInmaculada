@@ -1,0 +1,30 @@
+@model CategoriaFormViewModel
+@{
+    ViewData["Title"] = "Cambiar nombre de categoría";
+    ViewData["Descripcion"] = "Los artículos de esta categoría se mantienen; solo cambia el nombre.";
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Categorias">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver a categorías
+    </a>
+}
+
+<section class="tarjeta formulario-tarjeta">
+    <form method="post" asp-action="EditarCategoria" class="formulario">
+        <input type="hidden" asp-for="IdCategoria" />
+        <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+        <div class="campo">
+            <label asp-for="Nombre"></label>
+            <input asp-for="Nombre" autofocus />
+            <span asp-validation-for="Nombre" class="error-campo"></span>
+        </div>
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-principal">Guardar</button>
+            <a class="boton boton-secundario" asp-action="Categorias">Cancelar</a>
+        </div>
+    </form>
+</section>

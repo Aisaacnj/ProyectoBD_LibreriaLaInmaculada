@@ -1,0 +1,76 @@
+@model List<LibreriaLaInmaculada.Backend.Modelos.Usuario>
+@{
+    ViewData["Title"] = "Usuarios";
+    ViewData["Descripcion"] = "Quién puede entrar al sistema y qué puede hacer. Las contraseñas se guardan cifradas.";
+    var miId = User.IdUsuario();
+}
+
+@section BannerDerecha {
+    <a class="banner-accion" asp-action="Nuevo">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+        Nuevo usuario
+    </a>
+}
+
+<section class="tarjeta" aria-labelledby="titulo-usuarios">
+    <h2 id="titulo-usuarios">Usuarios del sistema</h2>
+
+    <div class="tabla-caja">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Registrado</th>
+                    <th><span class="solo-lector">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    var esYo = u.IdUsuario == miId;
+                    var esAdminFila = u.Rol == Roles.Administrador;
+                    <tr class="@(u.Activo ? "" : "fila-inactiva")">
+                        <td>
+                            <div class="persona">
+                                <div class="avatar chico @(esAdminFila ? "avatar-admin" : "")" aria-hidden="true">@Formato.Iniciales(u.NombreCompleto ?? u.NombreUsuario)</div>
+                                <span class="fuerte">@(u.NombreCompleto ?? u.NombreUsuario)</span>
+                                @if (esYo)
+                                {
+                                    <span class="insignia azul">Usted</span>
+                                }
+                            </div>
+                        </td>
+                        <td>@u.NombreUsuario</td>
+                        <td><span class="insignia @(esAdminFila ? "dorado" : "azul")">@u.Rol</span></td>
+                        <td><span class="insignia @(u.Activo ? "verde" : "gris")">@(u.Activo ? "Activo" : "Desactivado")</span></td>
+                        <td class="texto-suave">@Formato.Fecha(u.FechaRegistro)</td>
+                        <td>
+                            <div class="acciones">
+                                <a class="boton-tabla" asp-action="Editar" asp-route-id="@u.IdUsuario" title="Editar nombre y rol" aria-label="Editar @u.NombreUsuario">
+                                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Editar" /></svg>
+                                </a>
+                                <a class="boton-tabla" asp-action="Password" asp-route-id="@u.IdUsuario" title="Cambiar contraseña" aria-label="Cambiar contraseña de @u.NombreUsuario">
+                                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Candado" /></svg>
+                                </a>
+                                @if (!esYo)
+                                {
+                                    <form method="post" asp-action="CambiarEstado" asp-route-id="@u.IdUsuario">
+                                        <button type="submit" class="boton-tabla @(u.Activo ? "peligro" : "exito")"
+                                                title="@(u.Activo ? "Desactivar" : "Activar")"
+                                                aria-label="@(u.Activo ? "Desactivar" : "Activar") @u.NombreUsuario">
+                                            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@(u.Activo ? Iconos.Desactivar : Iconos.Activar)" /></svg>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="texto-suave">Un usuario desactivado ya no puede iniciar sesión, pero sus ventas y compras se conservan.</p>
+</section>

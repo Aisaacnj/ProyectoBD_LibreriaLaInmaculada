@@ -1,0 +1,76 @@
+@model ArticuloFormViewModel
+@{
+    ViewData["Title"] = Model.EsNuevo ? "Nuevo artículo" : "Editar artículo";
+    ViewData["Descripcion"] = Model.EsNuevo
+        ? "El artículo empieza con stock 0. Las unidades entran al registrar una compra."
+        : Model.Descripcion;
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver al inventario
+    </a>
+}
+
+<section class="tarjeta formulario-tarjeta">
+    <form method="post" asp-action="@(Model.EsNuevo ? "Nuevo" : "Editar")" class="formulario">
+        <input type="hidden" asp-for="IdArticulo" />
+        <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+        <div class="campo">
+            <label asp-for="Descripcion"></label>
+            <input asp-for="Descripcion" placeholder="Por ejemplo: Lápiz de grafito HB" autofocus />
+            <span asp-validation-for="Descripcion" class="error-campo"></span>
+        </div>
+
+        <div class="formulario-grid">
+            <div class="campo">
+                <label asp-for="IdCategoria"></label>
+                <select asp-for="IdCategoria">
+                    <option value="">Elija una categoría</option>
+                    @foreach (var c in Model.Categorias)
+                    {
+                        <option value="@c.IdCategoria">@c.Nombre@(c.Activo ? "" : " (desactivada)")</option>
+                    }
+                </select>
+                <span asp-validation-for="IdCategoria" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="StockMinimo"></label>
+                <input asp-for="StockMinimo" type="number" min="0" step="1" inputmode="numeric" />
+                <span class="ayuda">Si el stock baja de este número, aparece en las alertas.</span>
+                <span asp-validation-for="StockMinimo" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="PrecioCompra"></label>
+                <input asp-for="PrecioCompra" type="number" min="0" step="0.01" inputmode="decimal"
+                       value="@(Model.PrecioCompra?.ToString("0.00", CultureInfo.InvariantCulture))" />
+                <span class="ayuda">Lo que le cuesta cada unidad a la librería.</span>
+                <span asp-validation-for="PrecioCompra" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="PrecioVenta"></label>
+                <input asp-for="PrecioVenta" type="number" min="0.01" step="0.01" inputmode="decimal"
+                       value="@(Model.PrecioVenta?.ToString("0.00", CultureInfo.InvariantCulture))" />
+                <span class="ayuda">Lo que paga el cliente por cada unidad.</span>
+                <span asp-validation-for="PrecioVenta" class="error-campo"></span>
+            </div>
+        </div>
+
+        @if (!Model.EsNuevo)
+        {
+            <div class="nota">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Candado" /></svg>
+                <span>Stock actual: <strong>@Model.Cantidad.ToString("N0") unidades</strong>. El stock no se edita aquí: cambia solo con compras, ventas y pérdidas.</span>
+            </div>
+        }
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-principal">
+                @(Model.EsNuevo ? "Agregar artículo" : "Guardar cambios")
+            </button>
+            <a class="boton boton-secundario" asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>

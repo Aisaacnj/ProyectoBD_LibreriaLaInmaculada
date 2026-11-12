@@ -14,14 +14,17 @@ LibreriaLaInmaculada/
 ├── Backend/                      ← LÓGICA (C#): recibe peticiones, consulta la base, decide permisos
 │   ├── Controladores/    Reciben cada clic o formulario y eligen qué pantalla mostrar
 │   ├── AccesoDatos/      ADO.NET: conexión y consultas SQL (repositorios)
-│   ├── Modelos/          Clases que representan filas de la base (Usuario, ...)
+│   ├── Modelos/          Clases que representan filas de la base (Usuario, Articulo, Categoria, Proveedor)
 │   └── Seguridad/        Roles, cifrado de contraseñas, datos del usuario conectado
 │
 ├── Frontend/                     ← LO QUE SE VE (Razor, HTML, CSS)
 │   ├── Vistas/           Pantallas .cshtml, una carpeta por controlador
 │   │   ├── Shared/       Partes comunes: menú (_Layout), decoración, errores
 │   │   ├── Cuenta/       Login y acceso denegado
-│   │   └── Home/         Inicio del administrador y del vendedor
+│   │   ├── Home/         Inicio del administrador y del vendedor
+│   │   ├── Inventario/   Lista de artículos, formulario y categorías
+│   │   ├── Proveedores/  Lista y formulario de proveedores
+│   │   └── Usuarios/     Lista, nuevo, editar y cambiar contraseña
 │   ├── ModelosDeVista/   Los datos que cada pantalla necesita mostrar
 │   ├── Ayudantes/        Formato de córdobas y fechas, iconos
 │   └── wwwroot/css/      site.css con todo el diseño
@@ -53,6 +56,23 @@ Cada carpeta tiene su propio `LEEME.md` con más detalle.
 |---|---|---|
 | `ADMIN` | `Admin2026!` | Administrador |
 | `jporras` | `Jorge2026!` | Vendedor |
+
+## Módulos
+
+| Módulo | Quién lo usa | Estado |
+|---|---|---|
+| Inicio (resumen) | Los dos roles | ✅ Listo |
+| Inventario: consultar artículos, stock y precios | Los dos roles (el vendedor no ve costos) | ✅ Listo |
+| Inventario: crear, editar, activar/desactivar artículos y categorías | Administrador | ✅ Listo |
+| Proveedores | Administrador | ✅ Listo |
+| Usuarios: crear, editar rol, cambiar contraseña, activar/desactivar | Administrador | ✅ Listo |
+| Vender y Ventas | Los dos roles | 🚧 Pendiente |
+| Compras, Pérdidas, Reportes | Administrador | 🚧 Pendiente |
+
+Reglas que ya cumple el sistema:
+- El **stock no se edita a mano**: un artículo nuevo empieza en 0 y la cantidad solo cambia con compras, ventas y pérdidas.
+- Nada se borra: artículos, categorías, proveedores y usuarios se **desactivan** (columna `Activo`), así el historial se conserva.
+- Nadie puede desactivarse a sí mismo ni quitarse su propio rol de administrador, y siempre queda al menos un administrador activo.
 
 ## Reglas para programar los siguientes módulos
 

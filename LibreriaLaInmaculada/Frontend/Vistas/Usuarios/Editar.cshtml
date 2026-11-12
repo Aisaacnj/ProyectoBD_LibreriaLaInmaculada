@@ -1,0 +1,45 @@
+@model UsuarioEditarViewModel
+@{
+    ViewData["Title"] = "Editar usuario";
+    ViewData["Descripcion"] = $"Usuario para iniciar sesión: {Model.Usuario} (no se puede cambiar).";
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver a usuarios
+    </a>
+}
+
+<section class="tarjeta formulario-tarjeta">
+    <form method="post" asp-action="Editar" class="formulario">
+        <input type="hidden" asp-for="IdUsuario" />
+        <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+        <div class="campo">
+            <label asp-for="NombreCompleto"></label>
+            <input asp-for="NombreCompleto" autofocus />
+            <span asp-validation-for="NombreCompleto" class="error-campo"></span>
+        </div>
+
+        @if (Model.EsUsuarioActual && Model.Rol == Roles.Administrador)
+        {
+            @* Uno mismo no puede quitarse el rol de administrador: se envía el rol actual sin poder cambiarlo *@
+            <input type="hidden" name="Rol" value="@Model.Rol" />
+            <div class="nota">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Candado" /></svg>
+                <span>Este es su propio usuario: su rol <strong>Administrador</strong> no se puede cambiar desde aquí.</span>
+            </div>
+        }
+        else
+        {
+            <partial name="_SelectorRol" model="(Model.Rol ?? Roles.Vendedor)" />
+            <span asp-validation-for="Rol" class="error-campo"></span>
+        }
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-principal">Guardar cambios</button>
+            <a class="boton boton-secundario" asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>

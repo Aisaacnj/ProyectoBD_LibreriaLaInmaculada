@@ -1,0 +1,179 @@
+@model InventarioIndexViewModel
+@{
+    ViewData["Title"] = "Inventario";
+    var esAdmin = User.EsAdministrador();
+    ViewData["Descripcion"] = esAdmin
+        ? "Artículos, existencias y precios. El stock cambia solo con compras, ventas y pérdidas."
+        : "Consulte existencias y precios de los artículos.";
+    bool hayFiltros = Model.Buscar != null || Model.IdCategoria != null || Model.Estado != null;
+}
+
+@section BannerDerecha {
+    @if (esAdmin)
+    {
+        <div class="banner-acciones">
+            <a class="banner-accion secundaria" asp-action="Categorias">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Etiqueta" /></svg>
+                Categorías
+            </a>
+            <a class="banner-accion" asp-action="Nuevo">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+                Nuevo artículo
+            </a>
+        </div>
+    }
+}
+
+<div class="kpis">
+    <a class="tarjeta kpi enlace" asp-action="Index">
+        <div class="kpi-icono azul"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Inventario" /></svg></div>
+        <span class="kpi-titulo">Artículos activos</span>
+        <span class="kpi-valor">@Model.TotalActivos</span>
+    </a>
+    <a class="tarjeta kpi enlace" asp-action="Index" asp-route-estado="bajo">
+        <div class="kpi-icono ambar"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Alerta" /></svg></div>
+        <span class="kpi-titulo">Con poco stock</span>
+        <span class="kpi-valor">@Model.BajoStock</span>
+    </a>
+    <a class="tarjeta kpi enlace" asp-action="Index" asp-route-estado="agotado">
+        <div class="kpi-icono rojo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg></div>
+        <span class="kpi-titulo">Agotados</span>
+        <span class="kpi-valor">@Model.Agotados</span>
+    </a>
+    @if (esAdmin)
+    {
+        <div class="tarjeta kpi">
+            <div class="kpi-icono verde"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Dinero" /></svg></div>
+            <span class="kpi-titulo">Valor del inventario (al costo)</span>
+            <span class="kpi-valor">@Formato.CordobasRedondo(Model.ValorInventario)</span>
+        </div>
+    }
+</div>
+
+<section class="tarjeta" aria-labelledby="titulo-lista">
+    <h2 id="titulo-lista" class="solo-lector">Lista de artículos</h2>
+
+    <form method="get" asp-action="Index" class="filtros">
+        <div class="campo crece">
+            <label for="buscar">Buscar</label>
+            <div class="con-icono">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Buscar" /></svg>
+                <input id="buscar" name="buscar" type="search" value="@Model.Buscar" placeholder="Nombre del artículo, por ejemplo: lápiz" />
+            </div>
+        </div>
+        <div class="campo">
+            <label for="categoria">Categoría</label>
+            <select id="categoria" name="categoria">
+                <option value="">Todas</option>
+                @foreach (var c in Model.Categorias)
+                {
+                    <option value="@c.IdCategoria" selected="@(Model.IdCategoria == c.IdCategoria)">@c.Nombre</option>
+                }
+            </select>
+        </div>
+        <div class="campo">
+            <label for="estado">Mostrar</label>
+            <select id="estado" name="estado">
+                <option value="">Todos los activos</option>
+                <option value="bajo" selected="@(Model.Estado == "bajo")">Poco stock</option>
+                <option value="agotado" selected="@(Model.Estado == "agotado")">Agotados</option>
+                @if (esAdmin)
+                {
+                    <option value="inactivos" selected="@(Model.Estado == "inactivos")">Desactivados</option>
+                }
+            </select>
+        </div>
+        <div class="filtros-botones">
+            <button type="submit" class="boton boton-principal chico">Filtrar</button>
+            @if (hayFiltros)
+            {
+                <a class="boton boton-secundario chico" asp-action="Index">Quitar filtros</a>
+            }
+        </div>
+    </form>
+
+    <p class="texto-suave">@Model.Articulos.Count @(Model.Articulos.Count == 1 ? "artículo" : "artículos")</p>
+
+    @if (Model.Articulos.Count == 0)
+    {
+        <p class="vacio-lista">No hay artículos con esos filtros.</p>
+    }
+    else
+    {
+        <div class="tabla-caja">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Categoría</th>
+                        <th class="derecha">Stock</th>
+                        <th class="derecha">Mínimo</th>
+                        @if (esAdmin)
+                        {
+                            <th class="derecha">Costo</th>
+                        }
+                        <th class="derecha">Precio</th>
+                        @if (esAdmin)
+                        {
+                            <th class="derecha">Margen</th>
+                            <th><span class="solo-lector">Acciones</span></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Articulos)
+                    {
+                        <tr class="@(a.Activo ? "" : "fila-inactiva")">
+                            <td class="fuerte">
+                                @a.Descripcion
+                                @if (!a.Activo)
+                                {
+                                    <span class="insignia gris">Desactivado</span>
+                                }
+                            </td>
+                            <td>@a.Categoria</td>
+                            <td class="derecha">
+                                @if (a.Agotado)
+                                {
+                                    <span class="insignia rojo">Agotado</span>
+                                }
+                                else if (a.BajoStock)
+                                {
+                                    <span class="insignia ambar">@a.Cantidad.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    @a.Cantidad.ToString("N0")
+                                }
+                            </td>
+                            <td class="derecha texto-suave">@a.StockMinimo</td>
+                            @if (esAdmin)
+                            {
+                                <td class="derecha">@Formato.Cordobas(a.PrecioCompra)</td>
+                            }
+                            <td class="derecha fuerte">@Formato.Cordobas(a.PrecioVenta)</td>
+                            @if (esAdmin)
+                            {
+                                <td class="derecha @(a.Margen < 0 ? "negativo" : "")">@Formato.Cordobas(a.Margen)</td>
+                                <td>
+                                    <div class="acciones">
+                                        <a class="boton-tabla" asp-action="Editar" asp-route-id="@a.IdArticulo" title="Editar" aria-label="Editar @a.Descripcion">
+                                            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Editar" /></svg>
+                                        </a>
+                                        <form method="post" asp-action="CambiarEstado" asp-route-id="@a.IdArticulo">
+                                            <button type="submit" class="boton-tabla @(a.Activo ? "peligro" : "exito")"
+                                                    title="@(a.Activo ? "Desactivar" : "Activar")"
+                                                    aria-label="@(a.Activo ? "Desactivar" : "Activar") @a.Descripcion">
+                                                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@(a.Activo ? Iconos.Desactivar : Iconos.Activar)" /></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

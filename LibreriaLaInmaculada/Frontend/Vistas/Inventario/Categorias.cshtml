@@ -1,0 +1,78 @@
+@model CategoriasViewModel
+@{
+    ViewData["Title"] = "Categorías";
+    ViewData["Descripcion"] = "Agrupan los artículos del inventario. Una categoría desactivada ya no aparece al crear artículos.";
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver al inventario
+    </a>
+}
+
+<div class="fila">
+    <section class="tarjeta crece" aria-labelledby="titulo-categorias">
+        <h2 id="titulo-categorias">Lista de categorías</h2>
+
+        @if (Model.Categorias.Count == 0)
+        {
+            <p class="vacio-lista">Todavía no hay categorías.</p>
+        }
+        else
+        {
+            <div class="tabla-caja">
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th class="derecha">Artículos activos</th>
+                            <th>Estado</th>
+                            <th><span class="solo-lector">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Categorias)
+                        {
+                            <tr class="@(c.Activo ? "" : "fila-inactiva")">
+                                <td class="fuerte">@c.Nombre</td>
+                                <td class="derecha">@c.TotalArticulos</td>
+                                <td>
+                                    <span class="insignia @(c.Activo ? "verde" : "gris")">@(c.Activo ? "Activa" : "Desactivada")</span>
+                                </td>
+                                <td>
+                                    <div class="acciones">
+                                        <a class="boton-tabla" asp-action="EditarCategoria" asp-route-id="@c.IdCategoria" title="Cambiar nombre" aria-label="Cambiar nombre de @c.Nombre">
+                                            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Editar" /></svg>
+                                        </a>
+                                        <form method="post" asp-action="CambiarEstadoCategoria" asp-route-id="@c.IdCategoria">
+                                            <button type="submit" class="boton-tabla @(c.Activo ? "peligro" : "exito")"
+                                                    title="@(c.Activo ? "Desactivar" : "Activar")"
+                                                    aria-label="@(c.Activo ? "Desactivar" : "Activar") @c.Nombre">
+                                                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@(c.Activo ? Iconos.Desactivar : Iconos.Activar)" /></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="tarjeta columna-lateral" aria-labelledby="titulo-nueva">
+        <h2 id="titulo-nueva">Agregar categoría</h2>
+        <form method="post" asp-action="NuevaCategoria" class="formulario">
+            <div class="campo">
+                <label for="nombre">Nombre</label>
+                <input id="nombre" name="nombre" maxlength="80" required placeholder="Por ejemplo: Manualidades" />
+            </div>
+            <button type="submit" class="boton boton-principal">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+                Agregar
+            </button>
+        </form>
+    </section>
+</div>

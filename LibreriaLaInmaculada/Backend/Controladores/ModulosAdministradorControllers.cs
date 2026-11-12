@@ -4,9 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LibreriaLaInmaculada.Backend.Controladores;
 
-// Módulos solo para el Administrador. El atributo [Authorize] bloquea la entrada aunque
-// alguien escriba la dirección a mano (por ejemplo /Compras): lo manda a Acceso denegado.
-// Cada uno se moverá a su propio archivo cuando se programe.
+// Módulos solo para el Administrador que todavía están en construcción.
+// Proveedores y Usuarios ya tienen su propio archivo (ProveedoresController.cs, UsuariosController.cs).
 
 [Authorize(Roles = Roles.Administrador)]
 public class ComprasController : Controller
@@ -21,19 +20,7 @@ public class PerdidasController : Controller
 }
 
 [Authorize(Roles = Roles.Administrador)]
-public class ProveedoresController : Controller
-{
-    public IActionResult Index() => View("EnConstruccion", (object)"Proveedores");
-}
-
-[Authorize(Roles = Roles.Administrador)]
 public class ReportesController : Controller
 {
     public IActionResult Index() => View("EnConstruccion", (object)"Reportes");
-}
-
-[Authorize(Roles = Roles.Administrador)]
-public class UsuariosController : Controller
-{
-    public IActionResult Index() => View("EnConstruccion", (object)"Usuarios");
 }
