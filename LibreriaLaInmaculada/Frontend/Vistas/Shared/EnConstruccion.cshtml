@@ -1,0 +1,13 @@
+@model string
+@{
+    ViewData["Title"] = Model;
+    ViewData["Descripcion"] = "Este módulo se programa en las siguientes etapas.";
+}
+<section class="tarjeta vacia">
+    <div class="vacia-icono">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Herramienta" /></svg>
+    </div>
+    <h2>@Model: en construcción</h2>
+    <p class="texto-suave">La página ya existe y está protegida según el rol; falta programar su contenido.</p>
+    <a class="boton boton-secundario" asp-controller="Home" asp-action="Index">Volver al inicio</a>
+</section>
