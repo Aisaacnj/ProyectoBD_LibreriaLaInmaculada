@@ -71,8 +71,8 @@ INSERT INTO dbo.CAT_Proveedor (idProveedor, Nombre, Contacto_Nombre, Telefono, E
     (3, 'Gonper Guanacaste', 'Francisco Téllez', '2224-1785', 'guanacaste@gonperlibrerias.com', 'Barrio Guanacaste, de los semáforos 2 c. al sur, Managua', '2026-01-05', '2026-01-05'),
     (4, 'Gonper Ciudad Jardín', 'Yahoska Rivas', '2249-4776', 'ciudadjardin@gonperlibrerias.com', 'Calle principal, Ciudad Jardín, Managua', '2026-01-05', '2026-01-05'),
     (5, 'Librería Jardín Norte', 'Ernesto Gutiérrez', '2264-8888', 'sucursalnorte@libreriajardin.com', 'Km 4.5 Carretera Norte, sobre la marginal (oficina central)', '2026-01-05', '2026-01-05'),
-    (6, 'Librería Jardín Metrocentro', 'María José Sandino', '2264-8888 ext. 178', 'metrocentro@libreriajardin.com', 'Metrocentro, pasillo a Siman, frente a Buffalo Wings', '2026-01-05', '2026-01-05'),
-    (7, 'Librería Jardín Centro Comercial Managua', 'Carlos Obando', '2264-8888 ext. 185', 'sucursalccm@libreriajardin.com', 'Centro Comercial Managua, sección C, módulo 94', '2026-01-05', '2026-01-05'),
+    (6, 'Librería Jardín Metrocentro', 'María José Sandino', '2264-8888', 'metrocentro@libreriajardin.com', 'Metrocentro, pasillo a Siman, frente a Buffalo Wings', '2026-01-05', '2026-01-05'),
+    (7, 'Librería Jardín Centro Comercial Managua', 'Carlos Obando', '2264-8888', 'sucursalccm@libreriajardin.com', 'Centro Comercial Managua, sección C, módulo 94', '2026-01-05', '2026-01-05'),
     (8, 'Universal', 'Lesbia Martínez', '2251-4380', 'ventas@universal.com.ni', 'Galerías Santo Domingo, primera planta, Managua', '2026-01-05', '2026-01-05');
 SET IDENTITY_INSERT dbo.CAT_Proveedor OFF;
 

@@ -67,7 +67,7 @@
         <form method="post" asp-action="NuevaCategoria" class="formulario">
             <div class="campo">
                 <label for="nombre">Nombre</label>
-                <input id="nombre" name="nombre" maxlength="80" required placeholder="Por ejemplo: Manualidades" />
+                <input id="nombre" name="nombre" minlength="3" maxlength="80" required placeholder="Por ejemplo: Manualidades" />
             </div>
             <button type="submit" class="boton boton-principal">
                 <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>

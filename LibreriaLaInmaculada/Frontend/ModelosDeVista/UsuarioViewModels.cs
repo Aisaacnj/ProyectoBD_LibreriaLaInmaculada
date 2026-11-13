@@ -11,7 +11,8 @@ public class UsuarioNuevoViewModel
     public string? Usuario { get; set; }
 
     [Required(ErrorMessage = "Escriba el nombre completo.")]
-    [StringLength(100, ErrorMessage = "Puede tener hasta 100 caracteres.")]
+    [StringLength(100, MinimumLength = 3, ErrorMessage = "Debe tener entre 3 y 100 caracteres.")]
+    [RegularExpression(Validaciones.NombrePersona, ErrorMessage = "Use solo letras y espacios.")]
     [Display(Name = "Nombre completo")]
     public string? NombreCompleto { get; set; }
 
@@ -21,6 +22,7 @@ public class UsuarioNuevoViewModel
 
     [Required(ErrorMessage = "Escriba una contraseña.")]
     [StringLength(100, MinimumLength = 8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres.")]
+    [RegularExpression(Validaciones.Contrasena, ErrorMessage = "La contraseña debe tener al menos una letra y un número.")]
     [DataType(DataType.Password)]
     [Display(Name = "Contraseña")]
     public string? Password { get; set; }
@@ -38,7 +40,8 @@ public class UsuarioEditarViewModel
     public string? Usuario { get; set; }           // solo se muestra, no se cambia
 
     [Required(ErrorMessage = "Escriba el nombre completo.")]
-    [StringLength(100, ErrorMessage = "Puede tener hasta 100 caracteres.")]
+    [StringLength(100, MinimumLength = 3, ErrorMessage = "Debe tener entre 3 y 100 caracteres.")]
+    [RegularExpression(Validaciones.NombrePersona, ErrorMessage = "Use solo letras y espacios.")]
     [Display(Name = "Nombre completo")]
     public string? NombreCompleto { get; set; }
 
@@ -56,6 +59,7 @@ public class UsuarioPasswordViewModel
 
     [Required(ErrorMessage = "Escriba la nueva contraseña.")]
     [StringLength(100, MinimumLength = 8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres.")]
+    [RegularExpression(Validaciones.Contrasena, ErrorMessage = "La contraseña debe tener al menos una letra y un número.")]
     [DataType(DataType.Password)]
     [Display(Name = "Nueva contraseña")]
     public string? Password { get; set; }

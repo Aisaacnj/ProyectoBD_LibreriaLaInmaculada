@@ -1,0 +1,22 @@
+@* Validación en el navegador: marca los errores ANTES de enviar el formulario, sin recargar la página.
+   Usa los mismos mensajes en español de los modelos de vista ([Required], [RegularExpression], ...).
+   Si no hay internet y estos archivos no cargan, no pasa nada: el servidor igual revisa todo al guardar. *@
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@4.0.0/dist/jquery.validate.unobtrusive.min.js"></script>
+<script>
+    // Mensajes en español para los límites puestos directamente en el HTML (required, min, max, ...)
+    if (window.jQuery && jQuery.validator) {
+        jQuery.extend(jQuery.validator.messages, {
+            required: "Este dato es obligatorio.",
+            email: "Escriba un correo válido.",
+            number: "Escriba un número.",
+            digits: "Escriba solo números.",
+            step: jQuery.validator.format("Revise el número: debe ir de {0} en {0}."),
+            maxlength: jQuery.validator.format("Escriba como máximo {0} caracteres."),
+            minlength: jQuery.validator.format("Escriba al menos {0} caracteres."),
+            max: jQuery.validator.format("El valor máximo es {0}."),
+            min: jQuery.validator.format("El valor mínimo es {0}.")
+        });
+    }
+</script>

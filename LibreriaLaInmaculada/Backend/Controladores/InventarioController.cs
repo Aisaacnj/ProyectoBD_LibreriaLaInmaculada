@@ -99,12 +99,12 @@ public class InventarioController : Controller
 
     private async Task<IActionResult> Guardar(ArticuloFormViewModel vm)
     {
-        vm.Descripcion = vm.Descripcion?.Trim();
+        vm.Descripcion = Validaciones.LimpiarTexto(vm.Descripcion);
 
-        if (vm.PrecioCompra < 0)
-            ModelState.AddModelError(nameof(vm.PrecioCompra), "El costo no puede ser negativo.");
-        if (vm.PrecioVenta <= 0)
-            ModelState.AddModelError(nameof(vm.PrecioVenta), "El precio de venta debe ser mayor que cero.");
+        // El precio de venta no puede ser menor que lo que cuesta el artículo
+        if (vm.PrecioCompra is not null && vm.PrecioVenta is not null && vm.PrecioVenta < vm.PrecioCompra)
+            ModelState.AddModelError(nameof(vm.PrecioVenta),
+                $"El precio de venta no puede ser menor que el costo (C$ {vm.PrecioCompra:N2}): se vendería con pérdida.");
 
         Articulo? actual = null;
         if (!vm.EsNuevo)
@@ -188,9 +188,9 @@ public class InventarioController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> NuevaCategoria(string? nombre)
     {
-        nombre = nombre?.Trim();
-        if (string.IsNullOrEmpty(nombre) || nombre.Length > 80)
-            TempData["Error"] = "Escriba un nombre de categoría de hasta 80 caracteres.";
+        nombre = Validaciones.LimpiarTexto(nombre);
+        if (string.IsNullOrEmpty(nombre) || nombre.Length < 3 || nombre.Length > 80)
+            TempData["Error"] = "El nombre de la categoría debe tener entre 3 y 80 caracteres.";
         else if (await _categorias.ExisteNombreAsync(nombre, null))
             TempData["Error"] = $"Ya existe la categoría «{nombre}».";
         else
@@ -214,7 +214,7 @@ public class InventarioController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> EditarCategoria(CategoriaFormViewModel vm)
     {
-        vm.Nombre = vm.Nombre?.Trim();
+        vm.Nombre = Validaciones.LimpiarTexto(vm.Nombre);
         if (await _categorias.ObtenerAsync(vm.IdCategoria) is null) return NotFound();
 
         if (ModelState.IsValid && await _categorias.ExisteNombreAsync(vm.Nombre!, vm.IdCategoria))

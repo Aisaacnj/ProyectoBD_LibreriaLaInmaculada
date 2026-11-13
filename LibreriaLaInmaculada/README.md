@@ -23,6 +23,7 @@ LibreriaLaInmaculada/
 │   │   ├── Cuenta/       Login y acceso denegado
 │   │   ├── Home/         Inicio del administrador y del vendedor
 │   │   ├── Inventario/   Lista de artículos, formulario y categorías
+│   │   ├── Compras/      Lista, registrar compra y detalle
 │   │   ├── Proveedores/  Lista y formulario de proveedores
 │   │   └── Usuarios/     Lista, nuevo, editar y cambiar contraseña
 │   ├── ModelosDeVista/   Los datos que cada pantalla necesita mostrar
@@ -66,15 +67,20 @@ Cada carpeta tiene su propio `LEEME.md` con más detalle.
 | Inventario: crear, editar, activar/desactivar artículos y categorías | Administrador | ✅ Listo |
 | Proveedores | Administrador | ✅ Listo |
 | Usuarios: crear, editar rol, cambiar contraseña, activar/desactivar | Administrador | ✅ Listo |
+| Compras: registrar facturas de proveedores (con IVA, buscador de artículos y creación rápida de artículos nuevos), ver detalle y anular | Administrador | ✅ Listo |
 | Vender y Ventas | Los dos roles | 🚧 Pendiente |
-| Compras, Pérdidas, Reportes | Administrador | 🚧 Pendiente |
+| Pérdidas, Reportes | Administrador | 🚧 Pendiente |
 
 Reglas que ya cumple el sistema:
 - El **stock no se edita a mano**: un artículo nuevo empieza en 0 y la cantidad solo cambia con compras, ventas y pérdidas.
 - Nada se borra: artículos, categorías, proveedores y usuarios se **desactivan** (columna `Activo`), así el historial se conserva.
+- Una compra registrada **suma** al stock y guarda su costo como el nuevo costo del artículo; anularla **resta** esas unidades (si ya se vendieron, no deja anular).
+- Los nombres no se repiten (artículos, categorías, proveedores, usuarios). Antes de comparar y guardar, el sistema quita los espacios de sobra.
 - Nadie puede desactivarse a sí mismo ni quitarse su propio rol de administrador, y siempre queda al menos un administrador activo.
 
 ## Reglas para programar los siguientes módulos
+
+- Los formatos (teléfono, correo, nombres, contraseña, N.º de factura) y los límites (cantidades, costos, fechas) están en `Frontend/ModelosDeVista/Validaciones.cs`. Se usan con `[RegularExpression]` en los modelos de vista: el navegador avisa antes de enviar y el servidor vuelve a revisar al guardar.
 
 - Todas las consultas van con **parámetros** (`cmd.Parameters.Add(...)`), nunca armando el SQL con texto.
 - Toda consulta de dinero o cantidades filtra `WHERE Estado = 'Activa'`.

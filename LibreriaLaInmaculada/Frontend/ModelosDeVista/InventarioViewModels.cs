@@ -27,7 +27,7 @@ public class ArticuloFormViewModel
     public int IdArticulo { get; set; }
 
     [Required(ErrorMessage = "Escriba la descripción del artículo.")]
-    [StringLength(150, ErrorMessage = "La descripción puede tener hasta 150 caracteres.")]
+    [StringLength(150, MinimumLength = 3, ErrorMessage = "La descripción debe tener entre 3 y 150 caracteres.")]
     [Display(Name = "Descripción")]
     public string? Descripcion { get; set; }
 
@@ -36,15 +36,17 @@ public class ArticuloFormViewModel
     public int? IdCategoria { get; set; }
 
     [Required(ErrorMessage = "Escriba el stock mínimo.")]
-    [Range(0, 100000, ErrorMessage = "El stock mínimo debe estar entre 0 y 100,000.")]
+    [Range(0, 10000, ErrorMessage = "El stock mínimo debe estar entre 0 y 10,000.")]
     [Display(Name = "Stock mínimo")]
     public int? StockMinimo { get; set; } = 5;
 
     [Required(ErrorMessage = "Escriba el costo.")]
+    [Range(typeof(decimal), "0.01", "100000", ErrorMessage = "El costo debe ser mayor que C$ 0 y hasta C$ 100,000.")]
     [Display(Name = "Costo por unidad (C$)")]
     public decimal? PrecioCompra { get; set; }
 
     [Required(ErrorMessage = "Escriba el precio de venta.")]
+    [Range(typeof(decimal), "0.01", "100000", ErrorMessage = "El precio debe ser mayor que C$ 0 y hasta C$ 100,000.")]
     [Display(Name = "Precio de venta por unidad (C$)")]
     public decimal? PrecioVenta { get; set; }
 
@@ -67,7 +69,7 @@ public class CategoriaFormViewModel
     public int IdCategoria { get; set; }
 
     [Required(ErrorMessage = "Escriba el nombre de la categoría.")]
-    [StringLength(80, ErrorMessage = "El nombre puede tener hasta 80 caracteres.")]
+    [StringLength(80, MinimumLength = 3, ErrorMessage = "El nombre debe tener entre 3 y 80 caracteres.")]
     [Display(Name = "Nombre")]
     public string? Nombre { get; set; }
 }

@@ -14,6 +14,7 @@
 <section class="tarjeta formulario-tarjeta">
     <form method="post" asp-action="Editar" class="formulario">
         <input type="hidden" asp-for="IdUsuario" />
+        <p class="codigo-interno">Código interno: @Model.IdUsuario</p>
         <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
 
         <div class="campo">

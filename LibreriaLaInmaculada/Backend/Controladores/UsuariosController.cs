@@ -30,7 +30,7 @@ public class UsuariosController : Controller
     public async Task<IActionResult> Nuevo(UsuarioNuevoViewModel vm)
     {
         vm.Usuario = vm.Usuario?.Trim();
-        vm.NombreCompleto = vm.NombreCompleto?.Trim();
+        vm.NombreCompleto = Validaciones.LimpiarTexto(vm.NombreCompleto);
 
         if (vm.Rol is not null && !RolesValidos.Contains(vm.Rol))
             ModelState.AddModelError(nameof(vm.Rol), "Elija un rol válido.");
@@ -80,7 +80,7 @@ public class UsuariosController : Controller
 
         vm.Usuario = u.NombreUsuario;
         vm.EsUsuarioActual = u.IdUsuario == User.IdUsuario();
-        vm.NombreCompleto = vm.NombreCompleto?.Trim();
+        vm.NombreCompleto = Validaciones.LimpiarTexto(vm.NombreCompleto);
 
         if (vm.Rol is not null && !RolesValidos.Contains(vm.Rol))
             ModelState.AddModelError(nameof(vm.Rol), "Elija un rol válido.");

@@ -16,6 +16,10 @@
 <section class="tarjeta formulario-tarjeta">
     <form method="post" asp-action="@(Model.EsNuevo ? "Nuevo" : "Editar")" class="formulario">
         <input type="hidden" asp-for="IdProveedor" />
+        @if (!Model.EsNuevo)
+        {
+            <p class="codigo-interno">Código interno: @Model.IdProveedor</p>
+        }
         <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
 
         <div class="campo">
@@ -32,12 +36,13 @@
             </div>
             <div class="campo">
                 <label asp-for="Telefono"></label>
-                <input asp-for="Telefono" type="tel" placeholder="Por ejemplo: 2266-0000" />
+                <input asp-for="Telefono" type="tel" inputmode="tel" maxlength="9" placeholder="Por ejemplo: 2266-0000" />
+                <span class="ayuda">8 dígitos. Fijos empiezan con 2; celulares con 5, 7 u 8.</span>
                 <span asp-validation-for="Telefono" class="error-campo"></span>
             </div>
             <div class="campo">
                 <label asp-for="Email"></label>
-                <input asp-for="Email" type="email" placeholder="Opcional" />
+                <input asp-for="Email" type="email" placeholder="Opcional, por ejemplo: ventas@proveedor.com" />
                 <span asp-validation-for="Email" class="error-campo"></span>
             </div>
         </div>

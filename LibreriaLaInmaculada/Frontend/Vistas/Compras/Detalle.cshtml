@@ -1,0 +1,113 @@
+@model LibreriaLaInmaculada.Backend.Modelos.Compra
+@{
+    ViewData["Title"] = $"Compra #{Model.IdCompra}";
+    ViewData["Descripcion"] = $"{Model.Proveedor} · Factura {Model.NumFactura}";
+    ViewData["Subtitulo"] = Formato.FechaLarga(Model.FechaCompra);
+}
+
+@section BannerDerecha {
+    <div class="banner-acciones">
+        <a class="banner-accion secundaria" asp-action="Index">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+            Volver a compras
+        </a>
+        <a class="banner-accion" asp-action="Nueva">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+            Registrar otra
+        </a>
+    </div>
+}
+
+<div class="fila">
+    <section class="tarjeta crece" aria-labelledby="titulo-lineas">
+        <div class="tarjeta-encabezado">
+            <h2 id="titulo-lineas">Artículos comprados</h2>
+            @if (Model.Anulada)
+            {
+                <span class="insignia rojo">Anulada</span>
+            }
+            else
+            {
+                <span class="insignia verde">Activa</span>
+            }
+        </div>
+
+        <div class="tabla-caja">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th class="derecha">Cantidad</th>
+                        <th class="derecha">Costo unit.</th>
+                        <th class="derecha">IVA</th>
+                        <th class="derecha">Subtotal</th>
+                        <th class="derecha">IVA</th>
+                        <th class="derecha">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Model.Lineas)
+                    {
+                        <tr>
+                            <td>
+                                <span class="fuerte">@l.Articulo</span>
+                                <span class="texto-pequeno">@l.Categoria</span>
+                            </td>
+                            <td class="derecha">@l.Cantidad.ToString("N0")</td>
+                            <td class="derecha">@Formato.Cordobas(l.PrecioUnitario)</td>
+                            <td class="derecha texto-suave">@(l.PorcentajeIVA == 0 ? "Exento" : l.PorcentajeIVA.ToString("0.##") + " %")</td>
+                            <td class="derecha">@Formato.Cordobas(l.SubTotal)</td>
+                            <td class="derecha">@Formato.Cordobas(l.IVA)</td>
+                            <td class="derecha fuerte">@Formato.Cordobas(l.Total)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <dl class="totales">
+            <div><dt>Subtotal</dt><dd>@Formato.Cordobas(Model.SubTotal)</dd></div>
+            <div><dt>IVA</dt><dd>@Formato.Cordobas(Model.IVA)</dd></div>
+            <div class="total-final"><dt>Total de la factura</dt><dd>@Formato.Cordobas(Model.Total)</dd></div>
+        </dl>
+    </section>
+
+    <div class="columna-lateral">
+        <section class="tarjeta" aria-labelledby="titulo-datos">
+            <h2 id="titulo-datos">Datos</h2>
+            <dl class="datos">
+                <div><dt>Proveedor</dt><dd>@Model.Proveedor</dd></div>
+                <div><dt>Factura del proveedor</dt><dd>@Model.NumFactura</dd></div>
+                <div><dt>Fecha de la factura</dt><dd>@Formato.Fecha(Model.FechaCompra)</dd></div>
+                <div><dt>Registrada por</dt><dd>@Model.RegistradoPor, el @Formato.Fecha(Model.FechaRegistro)</dd></div>
+                <div><dt>Unidades</dt><dd>@(Model.Lineas.Sum(l => l.Cantidad).ToString("N0")) en @Model.Lineas.Count @(Model.Lineas.Count == 1 ? "artículo" : "artículos")</dd></div>
+            </dl>
+        </section>
+
+        @if (Model.Anulada)
+        {
+            <div class="nota">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Alerta" /></svg>
+                <span>Esta compra está anulada: sus unidades ya se restaron del inventario y no cuenta en los totales ni en los reportes.</span>
+            </div>
+        }
+        else
+        {
+            <section class="tarjeta tarjeta-peligro" aria-labelledby="titulo-anular">
+                <h2 id="titulo-anular">Anular compra</h2>
+                <p class="texto-suave">
+                    Úsela si la compra se registró por error. Se restan del inventario las
+                    @(Model.Lineas.Sum(l => l.Cantidad).ToString("N0")) unidades que entraron.
+                    La compra no se borra: queda marcada como anulada.
+                </p>
+                <form method="post" asp-action="Anular" asp-route-id="@Model.IdCompra"
+                      onsubmit="return confirm('¿Anular la compra #@(Model.IdCompra)? Se restarán sus unidades del inventario.');">
+                    <button type="submit" class="boton boton-peligro chico">
+                        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
+                        Anular compra
+                    </button>
+                </form>
+            </section>
+        }
+    </div>
+</div>

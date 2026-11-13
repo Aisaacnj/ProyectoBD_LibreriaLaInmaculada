@@ -61,7 +61,12 @@ public class ProveedoresController : Controller
 
     private async Task<IActionResult> Guardar(ProveedorFormViewModel vm)
     {
-        vm.Nombre = vm.Nombre?.Trim();
+        vm.Nombre = Validaciones.LimpiarTexto(vm.Nombre);
+        vm.ContactoNombre = Validaciones.LimpiarTexto(vm.ContactoNombre);
+        vm.Direccion = Validaciones.LimpiarTexto(vm.Direccion);
+        vm.Email = vm.Email?.Trim().ToLowerInvariant();
+        if (ModelState.IsValid)
+            vm.Telefono = Validaciones.FormatearTelefono(vm.Telefono);   // siempre se guarda como 0000-0000
 
         Proveedor? actual = null;
         if (!vm.EsNuevo)

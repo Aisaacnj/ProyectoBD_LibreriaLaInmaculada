@@ -5,13 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace LibreriaLaInmaculada.Backend.Controladores;
 
 // Módulos solo para el Administrador que todavía están en construcción.
-// Proveedores y Usuarios ya tienen su propio archivo (ProveedoresController.cs, UsuariosController.cs).
-
-[Authorize(Roles = Roles.Administrador)]
-public class ComprasController : Controller
-{
-    public IActionResult Index() => View("EnConstruccion", (object)"Compras");
-}
+// Compras, Proveedores y Usuarios ya tienen su propio archivo
+// (ComprasController.cs, ProveedoresController.cs, UsuariosController.cs).
 
 [Authorize(Roles = Roles.Administrador)]
 public class PerdidasController : Controller

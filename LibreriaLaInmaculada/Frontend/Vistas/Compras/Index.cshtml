@@ -1,0 +1,137 @@
+@model ComprasIndexViewModel
+@{
+    ViewData["Title"] = "Compras";
+    ViewData["Descripcion"] = "Facturas de los proveedores. Cada compra registrada suma unidades al inventario.";
+    bool hayFiltros = Model.Desde != null || Model.Hasta != null || Model.IdProveedor != null || Model.Estado != "Activa";
+    var activas = Model.Compras.Where(c => !c.Anulada).ToList();
+    var totalActivas = activas.Sum(c => c.Total);
+}
+
+@section BannerDerecha {
+    <a class="banner-accion" asp-action="Nueva">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+        Registrar compra
+    </a>
+}
+
+<div class="kpis">
+    <div class="tarjeta kpi">
+        <div class="kpi-icono azul"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Compras" /></svg></div>
+        <span class="kpi-titulo">Compras de @Formato.Mes(DateTime.Today.Month)</span>
+        <span class="kpi-valor">@Model.ComprasMes</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono verde"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Dinero" /></svg></div>
+        <span class="kpi-titulo">Pagado este mes (con IVA)</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(Model.TotalMes)</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono indigo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ventas" /></svg></div>
+        <span class="kpi-titulo">IVA pagado este mes</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(Model.IvaMes)</span>
+    </div>
+</div>
+
+<section class="tarjeta" aria-labelledby="titulo-compras">
+    <h2 id="titulo-compras" class="solo-lector">Lista de compras</h2>
+
+    <form method="get" asp-action="Index" class="filtros">
+        <div class="campo">
+            <label for="desde">Desde</label>
+            <input id="desde" name="desde" type="date" value="@(Model.Desde?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="campo">
+            <label for="hasta">Hasta</label>
+            <input id="hasta" name="hasta" type="date" value="@(Model.Hasta?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="campo crece">
+            <label for="proveedor">Proveedor</label>
+            <select id="proveedor" name="proveedor">
+                <option value="">Todos</option>
+                @foreach (var p in Model.Proveedores)
+                {
+                    <option value="@p.IdProveedor" selected="@(Model.IdProveedor == p.IdProveedor)">@p.Nombre</option>
+                }
+            </select>
+        </div>
+        <div class="campo">
+            <label for="estado">Mostrar</label>
+            <select id="estado" name="estado">
+                <option value="Activa">Activas</option>
+                <option value="Anulada" selected="@(Model.Estado == "Anulada")">Anuladas</option>
+                <option value="Todas" selected="@(Model.Estado == "Todas")">Todas</option>
+            </select>
+        </div>
+        <div class="filtros-botones">
+            <button type="submit" class="boton boton-principal chico">Filtrar</button>
+            @if (hayFiltros)
+            {
+                <a class="boton boton-secundario chico" asp-action="Index">Quitar filtros</a>
+            }
+        </div>
+    </form>
+
+    <p class="texto-suave">
+        @Model.Compras.Count @(Model.Compras.Count == 1 ? "compra" : "compras")
+        @if (activas.Count > 0)
+        {
+            <span>· Total de las activas mostradas: <strong>@Formato.Cordobas(totalActivas)</strong></span>
+        }
+    </p>
+
+    @if (Model.Compras.Count == 0)
+    {
+        <p class="vacio-lista">No hay compras con esos filtros.</p>
+    }
+    else
+    {
+        <div class="tabla-caja">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>N.º</th>
+                        <th>Fecha</th>
+                        <th>Proveedor</th>
+                        <th>Factura</th>
+                        <th class="derecha">Artículos</th>
+                        <th class="derecha">Subtotal</th>
+                        <th class="derecha">IVA</th>
+                        <th class="derecha">Total</th>
+                        <th><span class="solo-lector">Acciones</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Compras)
+                    {
+                        <tr class="@(c.Anulada ? "fila-inactiva" : "")">
+                            <td class="texto-suave">#@c.IdCompra</td>
+                            <td class="sin-saltos">@Formato.Fecha(c.FechaCompra)</td>
+                            <td class="fuerte">@c.Proveedor</td>
+                            <td>
+                                @c.NumFactura
+                                @if (c.Anulada)
+                                {
+                                    <span class="insignia rojo">Anulada</span>
+                                }
+                            </td>
+                            <td class="derecha">
+                                @c.TotalLineas
+                                <span class="texto-pequeno">@c.TotalUnidades.ToString("N0") unid.</span>
+                            </td>
+                            <td class="derecha">@Formato.Cordobas(c.SubTotal)</td>
+                            <td class="derecha">@Formato.Cordobas(c.IVA)</td>
+                            <td class="derecha fuerte">@Formato.Cordobas(c.Total)</td>
+                            <td>
+                                <div class="acciones">
+                                    <a class="boton-tabla" asp-action="Detalle" asp-route-id="@c.IdCompra" title="Ver detalle" aria-label="Ver la compra @c.IdCompra">
+                                        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ver" /></svg>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

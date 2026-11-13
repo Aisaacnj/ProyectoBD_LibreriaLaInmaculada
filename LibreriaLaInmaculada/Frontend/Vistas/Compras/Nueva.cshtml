@@ -1,0 +1,443 @@
+@model CompraNuevaViewModel
+@{
+    ViewData["Title"] = "Registrar compra";
+    ViewData["Descripcion"] = "Copie los datos de la factura del proveedor. Al guardar, las unidades entran al inventario.";
+
+    // Una fila de la tabla de artículos. Se usa para las filas que ya vienen
+    // (si hubo un error al guardar) y para la plantilla que copia el botón "Agregar fila".
+    // El artículo se busca escribiendo su nombre; el id elegido viaja en un campo oculto.
+    async Task Fila(LineaCompraViewModel? l, string i)
+    {
+        var elegido = l?.IdArticulo is null ? null : Model.Articulos.FirstOrDefault(a => a.IdArticulo == l.IdArticulo);
+        <tr class="linea">
+            <td class="col-articulo">
+                <label class="solo-lector" for="art-@i">Artículo</label>
+                <div class="buscador-articulo">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Buscar" /></svg>
+                    <input id="art-@i" name="buscar-@i" class="js-buscar" list="lista-articulos" autocomplete="off"
+                           placeholder="Escriba para buscar…" required value="@(elegido?.Descripcion)" />
+                    <button type="button" class="boton-tabla js-nuevo-articulo" title="Crear un artículo nuevo" aria-label="Crear un artículo nuevo para esta fila">
+                        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+                    </button>
+                </div>
+                <input type="hidden" name="Lineas[@i].IdArticulo" data-campo="IdArticulo" class="js-articulo" value="@(elegido?.IdArticulo)" />
+                <span class="error-linea" data-valmsg-for="buscar-@i" data-valmsg-replace="true"></span>
+            </td>
+            <td class="col-numero">
+                <label class="solo-lector" for="cant-@i">Cantidad</label>
+                <input id="cant-@i" name="Lineas[@i].Cantidad" data-campo="Cantidad" class="js-cantidad"
+                       type="number" min="1" max="10000" step="1" inputmode="numeric" required value="@(l?.Cantidad)" />
+                <span class="error-linea" data-campo-msg="Cantidad" data-valmsg-for="Lineas[@i].Cantidad" data-valmsg-replace="true"></span>
+            </td>
+            <td class="col-numero">
+                <label class="solo-lector" for="costo-@i">Costo por unidad sin IVA</label>
+                <input id="costo-@i" name="Lineas[@i].PrecioUnitario" data-campo="PrecioUnitario" class="js-costo"
+                       type="number" min="0.01" max="100000" step="0.01" inputmode="decimal" required
+                       value="@(l?.PrecioUnitario?.ToString("0.00", CultureInfo.InvariantCulture))" />
+                <span class="error-linea" data-campo-msg="PrecioUnitario" data-valmsg-for="Lineas[@i].PrecioUnitario" data-valmsg-replace="true"></span>
+            </td>
+            <td class="col-iva">
+                <label class="solo-lector" for="iva-@i">IVA</label>
+                <select id="iva-@i" name="Lineas[@i].PorcentajeIVA" data-campo="PorcentajeIVA" class="js-iva">
+                    <option value="15">15 %</option>
+                    <option value="0" selected="@(l?.PorcentajeIVA == 0)">Exento</option>
+                </select>
+            </td>
+            <td class="derecha js-subtotal">C$ 0.00</td>
+            <td class="derecha js-ivamonto texto-suave">C$ 0.00</td>
+            <td class="derecha fuerte js-total">C$ 0.00</td>
+            <td>
+                <button type="button" class="boton-tabla peligro js-quitar" title="Quitar fila" aria-label="Quitar esta fila">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
+                </button>
+            </td>
+        </tr>
+        await Task.CompletedTask;
+    }
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver a compras
+    </a>
+}
+
+@* Lista de artículos activos para el buscador (el navegador la filtra mientras se escribe) *@
+<datalist id="lista-articulos">
+    @foreach (var a in Model.Articulos)
+    {
+        <option value="@a.Descripcion" data-id="@a.IdArticulo"
+                data-costo="@a.PrecioCompra.ToString("0.00", CultureInfo.InvariantCulture)">Hay @a.Cantidad · @a.Categoria</option>
+    }
+</datalist>
+
+<form method="post" asp-action="Nueva" id="form-compra" class="formulario">
+    <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+    <section class="tarjeta" aria-labelledby="titulo-factura">
+        <h2 id="titulo-factura">1. Datos de la factura</h2>
+        <div class="formulario-grid">
+            <div class="campo">
+                <label asp-for="IdProveedor"></label>
+                <select asp-for="IdProveedor">
+                    <option value="">Elija el proveedor…</option>
+                    @foreach (var p in Model.Proveedores)
+                    {
+                        <option value="@p.IdProveedor">@p.Nombre</option>
+                    }
+                </select>
+                <span asp-validation-for="IdProveedor" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="NumFactura"></label>
+                <input asp-for="NumFactura" maxlength="30" class="mayusculas" placeholder="Por ejemplo: GP-0029541" />
+                <span asp-validation-for="NumFactura" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="FechaCompra"></label>
+                <input asp-for="FechaCompra" type="date" min="2020-01-01" max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                       value="@(Model.FechaCompra?.ToString("yyyy-MM-dd"))" />
+                <span asp-validation-for="FechaCompra" class="error-campo"></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="titulo-articulos">
+        <div class="tarjeta-encabezado">
+            <h2 id="titulo-articulos">2. Artículos de la factura</h2>
+            <p class="texto-suave">
+                Escriba parte del nombre para buscar el artículo (por ejemplo «cuad»). Si no está en el catálogo, créelo con el botón
+                <strong>+</strong> de la fila. El costo va <strong>sin IVA</strong>, por unidad. Si sobra una fila vacía, quítela con la ✕.
+            </p>
+        </div>
+
+        <div class="tabla-caja">
+            <table class="tabla tabla-lineas">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Cantidad</th>
+                        <th>Costo unit.</th>
+                        <th>IVA</th>
+                        <th class="derecha">Subtotal</th>
+                        <th class="derecha">IVA</th>
+                        <th class="derecha">Total</th>
+                        <th><span class="solo-lector">Quitar</span></th>
+                    </tr>
+                </thead>
+                <tbody id="lineas">
+                    @for (int i = 0; i < Model.Lineas.Count; i++)
+                    {
+                        await Fila(Model.Lineas[i], i.ToString());
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <template id="plantilla-linea">
+            @{ await Fila(null, "__i__"); }
+        </template>
+
+        <div class="lineas-pie">
+            <div class="lineas-botones">
+                <button type="button" id="agregar-linea" class="boton boton-secundario chico">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+                    Agregar fila
+                </button>
+                <button type="button" id="nuevo-articulo-pie" class="boton boton-secundario chico">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Inventario" /></svg>
+                    Artículo nuevo
+                </button>
+            </div>
+
+            <dl class="totales">
+                <div><dt>Subtotal</dt><dd id="total-subtotal">C$ 0.00</dd></div>
+                <div><dt>IVA</dt><dd id="total-iva">C$ 0.00</dd></div>
+                <div class="total-final"><dt>Total de la factura</dt><dd id="total-general">C$ 0.00</dd></div>
+            </dl>
+        </div>
+    </section>
+
+    <div class="formulario-botones">
+        <button type="submit" class="boton boton-principal" id="registrar-compra">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Activar" /></svg>
+            Registrar compra
+        </button>
+        <a class="boton boton-secundario" asp-action="Index">Cancelar</a>
+    </div>
+</form>
+
+@* Ventanita para crear un artículo sin salir de la compra. Va FUERA del formulario de la compra. *@
+<dialog id="dialogo-articulo" class="dialogo" aria-labelledby="titulo-dialogo">
+    <form method="post" asp-action="CrearArticulo" id="form-articulo" class="formulario">
+        <div class="dialogo-encabezado">
+            <h2 id="titulo-dialogo">Artículo nuevo</h2>
+            <button type="button" class="boton-tabla js-cerrar-dialogo" title="Cerrar" aria-label="Cerrar">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
+            </button>
+        </div>
+        <p class="texto-suave">Se agrega al inventario con stock 0. Las unidades entran al registrar esta compra.</p>
+
+        <div class="mensaje-error validation-summary-errors" id="errores-articulo" role="alert" hidden></div>
+
+        <div class="campo">
+            <label for="na-descripcion">Descripción</label>
+            <input id="na-descripcion" name="Descripcion" required minlength="3" maxlength="150" placeholder="Por ejemplo: Cuaderno espiral 80 hojas" />
+        </div>
+        <div class="formulario-grid">
+            <div class="campo">
+                <label for="na-categoria">Categoría</label>
+                <select id="na-categoria" name="IdCategoria" required>
+                    <option value="">Elija una categoría…</option>
+                    @foreach (var c in Model.Categorias)
+                    {
+                        <option value="@c.IdCategoria">@c.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div class="campo">
+                <label for="na-minimo">Stock mínimo</label>
+                <input id="na-minimo" name="StockMinimo" type="number" min="0" max="10000" step="1" value="5" required />
+            </div>
+            <div class="campo">
+                <label for="na-costo">Costo por unidad sin IVA (C$)</label>
+                <input id="na-costo" name="PrecioCompra" type="number" min="0.01" max="100000" step="0.01" inputmode="decimal" required />
+            </div>
+            <div class="campo">
+                <label for="na-precio">Precio de venta por unidad (C$)</label>
+                <input id="na-precio" name="PrecioVenta" type="number" min="0.01" max="100000" step="0.01" inputmode="decimal" required />
+            </div>
+        </div>
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-principal" id="guardar-articulo">Crear y usar en la compra</button>
+            <button type="button" class="boton boton-secundario js-cerrar-dialogo">Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+@section Scripts {
+<script>
+    // Formulario de compra:
+    //  - buscar artículos escribiendo su nombre,
+    //  - agregar y quitar filas, y calcular totales en vivo,
+    //  - crear un artículo nuevo en una ventanita sin perder lo ya escrito.
+    // (El servidor vuelve a revisar y calcular todo al guardar.)
+    (function () {
+        const cuerpo = document.getElementById('lineas');
+        const plantilla = document.getElementById('plantilla-linea');
+        const lista = document.getElementById('lista-articulos');
+        const dialogo = document.getElementById('dialogo-articulo');
+        const formArticulo = document.getElementById('form-articulo');
+        const cajaErrores = document.getElementById('errores-articulo');
+        let contador = 0;
+        let filaDestino = null;   // la fila que recibirá el artículo creado en la ventanita
+        let filaTemporal = null;  // fila agregada solo para la ventanita (se quita si se cancela)
+
+        const redondear = n => Math.round((n + Number.EPSILON) * 100) / 100;
+        const cordobas = n => 'C$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const numero = el => parseFloat(el.value) || 0;
+        const clave = texto => (texto || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+        // Nombre del artículo → { id, costo }
+        const articulos = new Map();
+        lista.querySelectorAll('option').forEach(o => articulos.set(clave(o.value), { id: o.dataset.id, costo: o.dataset.costo }));
+
+        // Los nombres deben ir Lineas[0], Lineas[1], ... sin huecos para que ASP.NET los lea
+        function renumerar() {
+            cuerpo.querySelectorAll('tr.linea').forEach((fila, i) => {
+                fila.querySelectorAll('[data-campo]').forEach(el => {
+                    el.name = 'Lineas[' + i + '].' + el.dataset.campo;
+                });
+                fila.querySelectorAll('[data-campo-msg]').forEach(el => {
+                    el.setAttribute('data-valmsg-for', 'Lineas[' + i + '].' + el.dataset.campoMsg);
+                });
+            });
+        }
+
+        function calcular() {
+            let subtotal = 0, iva = 0;
+            cuerpo.querySelectorAll('tr.linea').forEach(fila => {
+                const cantidad = numero(fila.querySelector('.js-cantidad'));
+                const costo = numero(fila.querySelector('.js-costo'));
+                const tasa = numero(fila.querySelector('.js-iva'));
+                const sub = redondear(cantidad * costo);
+                const imp = redondear(cantidad * costo * tasa / 100);
+                fila.querySelector('.js-subtotal').textContent = cordobas(sub);
+                fila.querySelector('.js-ivamonto').textContent = cordobas(imp);
+                fila.querySelector('.js-total').textContent = cordobas(sub + imp);
+                subtotal += sub;
+                iva += imp;
+            });
+            document.getElementById('total-subtotal').textContent = cordobas(subtotal);
+            document.getElementById('total-iva').textContent = cordobas(iva);
+            document.getElementById('total-general').textContent = cordobas(subtotal + iva);
+        }
+
+        // Pasa el texto escrito en el buscador al campo oculto con el id del artículo
+        function elegirArticulo(fila) {
+            const buscar = fila.querySelector('.js-buscar');
+            const encontrado = articulos.get(clave(buscar.value));
+            fila.querySelector('.js-articulo').value = encontrado ? encontrado.id : '';
+            const costo = fila.querySelector('.js-costo');
+            if (encontrado && !costo.value) costo.value = encontrado.costo;
+        }
+
+        function agregarFila() {
+            const id = 'n' + (contador++);
+            cuerpo.insertAdjacentHTML('beforeend', plantilla.innerHTML.replaceAll('__i__', id));
+            renumerar();
+            calcular();
+            cuerpo.lastElementChild.querySelector('.js-buscar').focus();
+            return cuerpo.lastElementChild;
+        }
+
+        document.getElementById('agregar-linea').addEventListener('click', agregarFila);
+
+        cuerpo.addEventListener('click', e => {
+            const quitar = e.target.closest('.js-quitar');
+            if (quitar) {
+                quitar.closest('tr').remove();
+                if (!cuerpo.querySelector('tr.linea')) agregarFila();
+                renumerar();
+                calcular();
+                return;
+            }
+            const nuevo = e.target.closest('.js-nuevo-articulo');
+            if (nuevo) abrirDialogo(nuevo.closest('tr'));
+        });
+
+        cuerpo.addEventListener('input', e => {
+            if (e.target.classList.contains('js-buscar')) elegirArticulo(e.target.closest('tr'));
+            calcular();
+        });
+        cuerpo.addEventListener('change', e => {
+            if (e.target.classList.contains('js-buscar')) {
+                const fila = e.target.closest('tr');
+                elegirArticulo(fila);
+                // Deja el nombre escrito tal como está en el catálogo (mayúsculas y tildes)
+                const opcion = [...lista.options].find(o => clave(o.value) === clave(e.target.value));
+                if (opcion) e.target.value = opcion.value;
+                if (window.jQuery && jQuery.validator) jQuery(e.target).valid();
+            }
+            calcular();
+        });
+
+        // Validación en el navegador: el texto del buscador debe ser un artículo de la lista
+        if (window.jQuery && jQuery.validator) {
+            jQuery.validator.addMethod('articuloValido', function (valor, el) {
+                return this.optional(el) || !!el.closest('tr').querySelector('.js-articulo').value;
+            }, 'Elija un artículo de la lista, o créelo con el botón +.');
+            jQuery.validator.addClassRules('js-buscar', { articuloValido: true });
+        }
+
+        // ---------------- Ventanita "Artículo nuevo"
+        function abrirDialogo(fila) {
+            filaDestino = fila;
+            formArticulo.reset();
+            cajaErrores.hidden = true;
+            if (fila) {
+                // Si ya escribió un nombre que no existe, se usa como descripción; el costo de la fila se aprovecha
+                const texto = fila.querySelector('.js-buscar').value.trim();
+                if (texto && !articulos.has(clave(texto))) formArticulo.Descripcion.value = texto;
+                formArticulo.PrecioCompra.value = fila.querySelector('.js-costo').value;
+            }
+            dialogo.showModal();
+            formArticulo.Descripcion.focus();
+        }
+
+        document.getElementById('nuevo-articulo-pie').addEventListener('click', () => {
+            // Usa la última fila si todavía no tiene artículo; si no, agrega una fila nueva
+            const filas = cuerpo.querySelectorAll('tr.linea');
+            const ultima = filas[filas.length - 1];
+            if (ultima && !ultima.querySelector('.js-articulo').value) {
+                abrirDialogo(ultima);
+            } else {
+                const nueva = agregarFila();
+                abrirDialogo(nueva);
+                filaTemporal = nueva;
+            }
+        });
+
+        dialogo.querySelectorAll('.js-cerrar-dialogo').forEach(b => b.addEventListener('click', () => dialogo.close()));
+
+        // Al cerrar la ventanita sin crear nada, se quita la fila que se había agregado solo para ella
+        dialogo.addEventListener('close', () => {
+            if (filaTemporal && !filaTemporal.querySelector('.js-articulo').value && cuerpo.querySelectorAll('tr.linea').length > 1) {
+                filaTemporal.remove();
+                renumerar();
+                calcular();
+            }
+            filaTemporal = null;
+        });
+
+        // Al registrar: las filas totalmente vacías se quitan para que no bloqueen el envío
+        const filaVacia = fila => !fila.querySelector('.js-buscar').value.trim()
+            && !fila.querySelector('.js-cantidad').value && !fila.querySelector('.js-costo').value;
+        // (se hace al hacer clic en "Registrar compra", antes de que el navegador revise los campos)
+        document.getElementById('registrar-compra').addEventListener('click', () => {
+            cuerpo.querySelectorAll('tr.linea').forEach(fila => {
+                if (filaVacia(fila) && cuerpo.querySelectorAll('tr.linea').length > 1) fila.remove();
+            });
+            renumerar();
+            calcular();
+        });
+
+        function mostrarErrores(errores) {
+            cajaErrores.innerHTML = '<ul>' + errores.map(t => '<li></li>').join('') + '</ul>';
+            cajaErrores.querySelectorAll('li').forEach((li, i) => li.textContent = errores[i]);
+            cajaErrores.hidden = false;
+        }
+
+        formArticulo.addEventListener('submit', async e => {
+            e.preventDefault();
+            const costo = parseFloat(formArticulo.PrecioCompra.value);
+            const precio = parseFloat(formArticulo.PrecioVenta.value);
+            if (!formArticulo.reportValidity()) return;
+            if (precio < costo) {
+                mostrarErrores(['El precio de venta no puede ser menor que el costo: se vendería con pérdida.']);
+                return;
+            }
+
+            const boton = document.getElementById('guardar-articulo');
+            boton.disabled = true;
+            try {
+                const respuesta = await fetch(formArticulo.action, { method: 'POST', body: new FormData(formArticulo) });
+                const datos = await respuesta.json();
+                if (!datos.ok) { mostrarErrores(datos.errores); return; }
+
+                // Agregar el artículo al buscador y ponerlo en la fila
+                const opcion = document.createElement('option');
+                opcion.value = datos.descripcion;
+                opcion.dataset.id = datos.id;
+                opcion.dataset.costo = datos.costo;
+                opcion.textContent = 'Nuevo · stock 0';
+                lista.appendChild(opcion);
+                articulos.set(clave(datos.descripcion), { id: String(datos.id), costo: datos.costo });
+
+                filaTemporal = null;   // la fila ya tiene artículo: se queda
+                if (filaDestino) {
+                    filaDestino.querySelector('.js-buscar').value = datos.descripcion;
+                    filaDestino.querySelector('.js-articulo').value = datos.id;
+                    filaDestino.querySelector('.js-costo').value = datos.costo;
+                    if (window.jQuery && jQuery.validator) jQuery(filaDestino.querySelector('.js-buscar')).valid();
+                    filaDestino.querySelector('.js-cantidad').focus();
+                }
+                dialogo.close();
+                calcular();
+            } catch {
+                mostrarErrores(['No se pudo crear el artículo. Revise la conexión o vuelva a iniciar sesión.']);
+            } finally {
+                boton.disabled = false;
+            }
+        });
+
+        // ---------------- Inicio
+        cuerpo.querySelectorAll('tr.linea').forEach(elegirArticulo);
+        if (!cuerpo.querySelector('tr.linea')) agregarFila();
+        renumerar();
+        calcular();
+    })();
+</script>
+}
