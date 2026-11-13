@@ -1,21 +1,8 @@
-using LibreriaLaInmaculada.Backend.Seguridad;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-
-namespace LibreriaLaInmaculada.Backend.Controladores;
-
-// Módulos solo para el Administrador que todavía están en construcción.
-// Compras, Proveedores y Usuarios ya tienen su propio archivo
-// (ComprasController.cs, ProveedoresController.cs, UsuariosController.cs).
-
-[Authorize(Roles = Roles.Administrador)]
-public class PerdidasController : Controller
-{
-    public IActionResult Index() => View("EnConstruccion", (object)"Pérdidas");
-}
-
-[Authorize(Roles = Roles.Administrador)]
-public class ReportesController : Controller
-{
-    public IActionResult Index() => View("EnConstruccion", (object)"Reportes");
-}
+// Este archivo quedó vacío a propósito.
+//
+// Antes tenía los controladores "en construcción" del Administrador. Ya todos tienen su propio archivo:
+//   ComprasController.cs, PerdidasController.cs, ProveedoresController.cs,
+//   ReportesController.cs y UsuariosController.cs
+//
+// Se puede borrar sin problema. Se deja vacío para que, al copiar la versión nueva encima
+// de la anterior, no queden dos clases con el mismo nombre.

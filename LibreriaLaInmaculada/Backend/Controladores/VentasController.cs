@@ -133,6 +133,8 @@ public class VentasController : Controller
         return RedirectToAction(nameof(Detalle), new { id = resultado.IdVenta });
     }
 
+    private static string Unidades(int n) => n == 1 ? "1 unidad" : $"{n} unidades";
+
     private static string Cordobas(decimal valor) => "C$ " + valor.ToString("N2", CultureInfo.GetCultureInfo("es-NI"));
 
     /// <summary>Artículos activos (con y sin stock: los agotados se muestran, pero no se dejan agregar).</summary>
@@ -170,13 +172,15 @@ public class VentasController : Controller
     }
 
     // ---------------------------------------------------------------- Devolución parcial (solo Administrador)
-    /// <summary>devolver[idArticulo] = unidades que devuelve el cliente.</summary>
+    /// <summary>devolver[idArticulo] = unidades que devuelve el cliente; danadas[idArticulo] = de esas, cuántas vienen dañadas.</summary>
     [Authorize(Roles = Roles.Administrador)]
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Devolver(int id, Dictionary<int, int?> devolver)
+    public async Task<IActionResult> Devolver(int id, Dictionary<int, int?> devolver, Dictionary<int, int?> danadas)
     {
         var cantidades = devolver.ToDictionary(d => d.Key, d => d.Value ?? 0);
-        var (error, ventaNueva, devueltas) = await _ventas.DevolverAsync(id, cantidades);
+        var cantidadesDanadas = danadas.ToDictionary(d => d.Key, d => d.Value ?? 0);
+        var (error, ventaNueva, devueltas, totalDanadas) =
+            await _ventas.DevolverAsync(id, cantidades, cantidadesDanadas, User.IdUsuario());
 
         if (error is not null)
         {
@@ -184,15 +188,19 @@ public class VentasController : Controller
             return RedirectToAction(nameof(Detalle), new { id });
         }
 
-        string unidades = devueltas == 1 ? "1 unidad" : $"{devueltas} unidades";
+        int buenas = devueltas - totalDanadas;
+        string resumen = $"{Unidades(buenas)} regresaron al inventario";
+        if (totalDanadas > 0)
+            resumen += $" y {Unidades(totalDanadas)} dañadas quedaron registradas como pérdida";
+
         if (ventaNueva is null)
         {
-            TempData["Mensaje"] = $"El cliente devolvió todo ({unidades}): la venta #{id} quedó anulada y las unidades regresaron al inventario.";
+            TempData["Mensaje"] = $"El cliente devolvió todo: {resumen}. La venta #{id} quedó anulada.";
             return RedirectToAction(nameof(Detalle), new { id });
         }
 
-        TempData["Mensaje"] = $"Devolución registrada: {unidades} regresaron al inventario. La venta #{id} quedó anulada " +
-                              $"y esta venta #{ventaNueva} tiene lo que el cliente se quedó. Si algo regresó dañado, regístrelo en Pérdidas.";
+        TempData["Mensaje"] = $"Devolución registrada: {resumen}. La venta #{id} quedó anulada " +
+                              $"y esta venta #{ventaNueva} tiene lo que el cliente se quedó.";
         return RedirectToAction(nameof(Detalle), new { id = ventaNueva });
     }
 }

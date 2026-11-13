@@ -25,11 +25,13 @@ LibreriaLaInmaculada/
 │   │   ├── Inventario/   Lista de artículos, formulario y categorías
 │   │   ├── Compras/      Lista, registrar compra y detalle
 │   │   ├── Ventas/       Vender (punto de venta), lista y comprobante
+│   │   ├── Perdidas/     Lista, registrar pérdida y motivos
+│   │   ├── Reportes/     Reporte del período (imprimible)
 │   │   ├── Proveedores/  Lista y formulario de proveedores
 │   │   └── Usuarios/     Lista, nuevo, editar y cambiar contraseña
 │   ├── ModelosDeVista/   Los datos que cada pantalla necesita mostrar
 │   ├── Ayudantes/        Formato de córdobas y fechas, iconos
-│   └── wwwroot/css/      site.css con todo el diseño
+│   └── wwwroot/          css/site.css (todo el diseño) y js/site.js ("Ver más" en las listas)
 │
 ├── Properties/launchSettings.json   Puertos (https 7180, http 5180)
 ├── Program.cs                       Arranque: une Backend, Frontend y base de datos
@@ -71,7 +73,8 @@ Cada carpeta tiene su propio `LEEME.md` con más detalle.
 | Compras: registrar facturas de proveedores (con IVA, buscador de artículos y creación rápida de artículos nuevos), ver detalle y anular | Administrador | ✅ Listo |
 | Vender: punto de venta con buscador, carrito, total y vuelto; comprobante imprimible | Los dos roles | ✅ Listo |
 | Ventas: el vendedor ve las suyas; el administrador ve todas con su ganancia, anula y registra devoluciones | Los dos roles | ✅ Listo |
-| Pérdidas, Reportes | Administrador | 🚧 Pendiente |
+| Pérdidas: registrar salidas que no son venta (dañado, seco, faltante, defecto de fábrica, uso interno), con sus motivos | Administrador | ✅ Listo |
+| Reportes: ventas, ganancia, compras, pérdidas, más vendidos, categorías, vendedores, proveedores, qué comprar y qué no se vende | Administrador | ✅ Listo |
 
 Reglas que ya cumple el sistema:
 - El **stock no se edita a mano**: un artículo nuevo empieza en 0 y la cantidad solo cambia con compras, ventas y pérdidas.
@@ -80,6 +83,8 @@ Reglas que ya cumple el sistema:
 - Los nombres no se repiten (artículos, categorías, proveedores, usuarios). Antes de comparar y guardar, el sistema quita los espacios de sobra.
 - Al vender, el precio y el costo se leen de la base en ese momento (nunca del navegador) y se guardan en la línea de la venta: si luego cambia el precio, las ventas viejas no cambian. No se puede vender más de lo que hay en stock.
 - Devolución parcial: la venta original se anula y se crea otra con lo que el cliente se quedó, con los mismos precios, vendedor y fecha.
+- Devolución de un cliente: lo que regresa en buen estado vuelve al stock; lo que regresa dañado se registra directo como pérdida (motivo «Producto dañado o defectuoso»).
+- Una pérdida solo se puede eliminar el mismo día en que se registró (para corregir errores); después queda en el historial.
 - Nadie puede desactivarse a sí mismo ni quitarse su propio rol de administrador, y siempre queda al menos un administrador activo.
 
 ## Reglas para programar los siguientes módulos

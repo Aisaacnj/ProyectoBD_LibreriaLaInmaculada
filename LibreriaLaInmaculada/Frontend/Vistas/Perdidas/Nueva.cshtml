@@ -1,0 +1,135 @@
+@model PerdidaNuevaViewModel
+@{
+    ViewData["Title"] = "Registrar pérdida";
+    ViewData["Descripcion"] = "Las unidades se restan del inventario al guardar.";
+    var elegido = Model.Articulos.FirstOrDefault(a => a.IdArticulo == Model.IdArticulo);
+    var catalogo = Model.Articulos.Select(a => new
+    {
+        id = a.IdArticulo,
+        nombre = a.Descripcion,
+        stock = a.Cantidad,
+        costo = a.PrecioCompra,
+        activo = a.Activo
+    });
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+        Volver a pérdidas
+    </a>
+}
+
+<datalist id="lista-articulos">
+    @foreach (var a in Model.Articulos)
+    {
+        <option value="@a.Descripcion">@(a.Cantidad == 0 ? "Sin stock" : $"Hay {a.Cantidad}")@(a.Activo ? "" : " · desactivado")</option>
+    }
+</datalist>
+
+<section class="tarjeta formulario-tarjeta">
+    <form method="post" asp-action="Nueva" class="formulario" id="form-perdida">
+        <div asp-validation-summary="ModelOnly" class="mensaje-error" role="alert"></div>
+
+        <div class="campo">
+            <label for="buscar-articulo">Artículo</label>
+            <div class="con-icono">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Buscar" /></svg>
+                <input id="buscar-articulo" name="buscar-articulo" list="lista-articulos" autocomplete="off" required
+                       placeholder="Escriba para buscar…" value="@(elegido?.Descripcion)" class="js-buscar" />
+            </div>
+            <input type="hidden" asp-for="IdArticulo" class="js-articulo" />
+            <span class="ayuda" id="info-articulo">Escriba parte del nombre y elíjalo de la lista.</span>
+            <span asp-validation-for="IdArticulo" class="error-campo"></span>
+            <span class="error-campo" data-valmsg-for="buscar-articulo" data-valmsg-replace="true"></span>
+        </div>
+
+        <div class="formulario-grid">
+            <div class="campo">
+                <label asp-for="IdMotivo"></label>
+                <select asp-for="IdMotivo">
+                    <option value="">Elija el motivo…</option>
+                    @foreach (var m in Model.Motivos)
+                    {
+                        <option value="@m.IdMotivo">@m.Descripcion</option>
+                    }
+                </select>
+                <span asp-validation-for="IdMotivo" class="error-campo"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="Cantidad"></label>
+                <input asp-for="Cantidad" type="number" min="1" max="10000" step="1" inputmode="numeric" />
+                <span asp-validation-for="Cantidad" class="error-campo"></span>
+            </div>
+        </div>
+
+        <div class="campo">
+            <label asp-for="Observacion"></label>
+            <textarea asp-for="Observacion" rows="2" maxlength="255" placeholder="Por ejemplo: se mojó con la gotera de la bodega"></textarea>
+            <span asp-validation-for="Observacion" class="error-campo"></span>
+        </div>
+
+        <div class="nota" id="costo-perdida" hidden>
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Alerta" /></svg>
+            <span id="costo-texto"></span>
+        </div>
+
+        <div class="formulario-botones">
+            <button type="submit" class="boton boton-peligro">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Perdidas" /></svg>
+                Registrar pérdida
+            </button>
+            <a class="boton boton-secundario" asp-action="Index">Cancelar</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+<script>
+    // Buscar el artículo por su nombre, mostrar cuánto hay y cuánto cuesta lo que se pierde
+    (function () {
+        const catalogo = @Json.Serialize(catalogo);
+        const clave = t => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+        const porNombre = new Map(catalogo.map(a => [clave(a.nombre), a]));
+        const cordobas = n => 'C$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const buscar = document.getElementById('buscar-articulo');
+        const oculto = document.getElementById('IdArticulo');
+        const cantidad = document.getElementById('Cantidad');
+        const info = document.getElementById('info-articulo');
+        const caja = document.getElementById('costo-perdida');
+
+        function actualizar() {
+            const a = porNombre.get(clave(buscar.value));
+            oculto.value = a ? a.id : '';
+            if (a) {
+                buscar.value = a.nombre;
+                cantidad.max = Math.max(1, Math.min(a.stock, 10000));
+                cantidad.setAttribute('data-msg-max', 'Solo hay ' + a.stock + ' en stock.');
+                info.textContent = a.stock === 0 ? 'Este artículo no tiene unidades en stock.' : 'Hay ' + a.stock + ' en stock.';
+            } else {
+                cantidad.max = 10000;
+                info.textContent = 'Escriba parte del nombre y elíjalo de la lista.';
+            }
+            const n = parseInt(cantidad.value) || 0;
+            caja.hidden = !(a && n > 0);
+            if (a && n > 0)
+                document.getElementById('costo-texto').textContent =
+                    'Se restarán ' + n + ' del inventario. Costo aproximado de la pérdida: ' + cordobas(n * a.costo) + '.';
+        }
+
+        buscar.addEventListener('change', actualizar);
+        buscar.addEventListener('input', () => { if (porNombre.has(clave(buscar.value))) actualizar(); else oculto.value = ''; });
+        cantidad.addEventListener('input', actualizar);
+
+        if (window.jQuery && jQuery.validator) {
+            jQuery.validator.addMethod('articuloValido', function (valor, el) {
+                return this.optional(el) || !!oculto.value;
+            }, 'Elija un artículo de la lista.');
+            jQuery.validator.addClassRules('js-buscar', { articuloValido: true });
+        }
+
+        actualizar();
+    })();
+</script>
+}

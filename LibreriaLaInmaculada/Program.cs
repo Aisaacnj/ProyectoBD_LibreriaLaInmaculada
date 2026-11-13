@@ -67,6 +67,8 @@ builder.Services.AddScoped<CategoriaRepositorio>();
 builder.Services.AddScoped<ProveedorRepositorio>();
 builder.Services.AddScoped<CompraRepositorio>();
 builder.Services.AddScoped<VentaRepositorio>();
+builder.Services.AddScoped<PerdidaRepositorio>();
+builder.Services.AddScoped<ReporteRepositorio>();
 
 var app = builder.Build();
 

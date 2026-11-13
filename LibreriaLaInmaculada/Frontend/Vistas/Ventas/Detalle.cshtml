@@ -129,25 +129,31 @@
             <section class="tarjeta" aria-labelledby="titulo-devolucion">
                 <h2 id="titulo-devolucion">Devolución del cliente</h2>
                 <p class="texto-suave">
-                    Escriba cuántas unidades devuelve. Regresan al inventario, esta venta se anula y se crea una
-                    venta nueva con lo que el cliente se queda, con los mismos precios.
+                    Escriba cuántas unidades devuelve y, de esas, cuántas vienen dañadas. Las buenas regresan al
+                    inventario; las dañadas se registran como pérdida. Esta venta se anula y se crea una venta nueva
+                    con lo que el cliente se queda, con los mismos precios.
                 </p>
-                <form method="post" asp-action="Devolver" asp-route-id="@v.IdVenta" class="formulario"
-                      onsubmit="return confirm('¿Registrar la devolución? La venta #@(v.IdVenta) se anulará y se creará una nueva con lo que el cliente se queda.');">
+                <form method="post" asp-action="Devolver" asp-route-id="@v.IdVenta" class="formulario" id="form-devolucion">
+                    <div class="fila-devolucion encabezado">
+                        <span>Artículo</span><span>Devuelve</span><span>Dañadas</span>
+                    </div>
                     @foreach (var l in v.Lineas)
                     {
                         <div class="fila-devolucion">
-                            <label for="dev-@l.IdArticulo">
+                            <span class="fila-devolucion-nombre">
                                 @l.Articulo
                                 <span class="texto-pequeno">Se llevó @l.Cantidad</span>
-                            </label>
-                            <input id="dev-@l.IdArticulo" name="devolver[@l.IdArticulo]" type="number"
-                                   min="0" max="@l.Cantidad" step="1" value="0" inputmode="numeric" />
+                            </span>
+                            <input id="dev-@l.IdArticulo" name="devolver[@l.IdArticulo]" type="number" aria-label="Unidades de @l.Articulo que devuelve" data-error-en="#aviso-devolucion"
+                                   min="0" max="@l.Cantidad" step="1" value="0" inputmode="numeric" class="js-devuelve" />
+                            <input id="dan-@l.IdArticulo" name="danadas[@l.IdArticulo]" type="number" aria-label="De esas, unidades dañadas de @l.Articulo" data-error-en="#aviso-devolucion"
+                                   min="0" max="@l.Cantidad" step="1" value="0" inputmode="numeric" class="js-danadas" />
                         </div>
                     }
+                    <p class="error-campo" id="aviso-devolucion" role="alert" hidden></p>
                     <button type="submit" class="boton boton-secundario chico">Registrar devolución</button>
                 </form>
-                <p class="texto-pequeno">Si algo regresó dañado y no se puede volver a vender, regístrelo después en Pérdidas.</p>
+                <p class="texto-pequeno">Las dañadas quedan en Pérdidas con el motivo «Producto dañado o defectuoso».</p>
             </section>
 
             <section class="tarjeta tarjeta-peligro" aria-labelledby="titulo-anular">
@@ -157,7 +163,9 @@
                     regresan al inventario. La venta no se borra: queda marcada como anulada.
                 </p>
                 <form method="post" asp-action="Anular" asp-route-id="@v.IdVenta"
-                      onsubmit="return confirm('¿Anular la venta #@(v.IdVenta)? Sus unidades regresarán al inventario.');">
+                      data-confirmar-titulo="¿Anular la venta #@(v.IdVenta)?"
+                      data-confirmar="Las @unidades.ToString("N0") unidades regresarán al inventario y la venta dejará de contar en los totales. No se borra: queda marcada como anulada."
+                      data-confirmar-boton="Sí, anular venta">
                     <button type="submit" class="boton boton-peligro chico">
                         <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
                         Anular venta
@@ -174,3 +182,43 @@
         }
     </div>
 </div>
+
+@section Scripts {
+<script>
+    // Devolución: las dañadas no pueden ser más que las devueltas, y hay que devolver algo
+    (function () {
+        const form = document.getElementById('form-devolucion');
+        if (!form) return;
+        const aviso = document.getElementById('aviso-devolucion');
+        form.addEventListener('submit', e => {
+            let total = 0, error = '';
+            form.querySelectorAll('.fila-devolucion:not(.encabezado)').forEach(fila => {
+                const devuelve = parseInt(fila.querySelector('.js-devuelve').value) || 0;
+                const danadas = parseInt(fila.querySelector('.js-danadas').value) || 0;
+                total += devuelve;
+                if (danadas > devuelve && !error)
+                    error = 'Las dañadas no pueden ser más que las que devuelve (' +
+                            fila.querySelector('.fila-devolucion-nombre').firstChild.textContent.trim() + ').';
+            });
+            if (!error && total === 0) error = 'Escriba cuántas unidades devuelve el cliente.';
+            if (error) {
+                e.preventDefault();
+                aviso.textContent = error;
+                aviso.hidden = false;
+                return;
+            }
+            // Confirmación con la ventana del sistema
+            e.preventDefault();
+            const cuantasDanadas = Array.from(form.querySelectorAll('.js-danadas')).reduce((s, c) => s + (parseInt(c.value) || 0), 0);
+            confirmarAccion({
+                titulo: '¿Registrar la devolución?',
+                mensaje: 'El cliente devuelve ' + total + (total === 1 ? ' unidad' : ' unidades') +
+                         (cuantasDanadas > 0 ? ' (' + cuantasDanadas + (cuantasDanadas === 1 ? ' dañada, que irá' : ' dañadas, que irán') + ' a Pérdidas)' : '') +
+                         '. La venta #@(v.IdVenta) se anulará y se creará una nueva con lo que el cliente se queda.',
+                boton: 'Sí, registrar devolución',
+                tipo: 'normal'
+            }).then(si => { if (si) form.submit(); });
+        });
+    })();
+</script>
+}

@@ -104,7 +104,21 @@
             @RenderBody()
         </main>
     </div>
+    @* Ventana de confirmación del sistema (reemplaza al "localhost dice..." del navegador) *@
+    <dialog id="dialogo-confirmar" class="dialogo dialogo-confirmar" aria-labelledby="confirmar-titulo" aria-describedby="confirmar-mensaje">
+        <div class="confirmar-icono">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Alerta" /></svg>
+        </div>
+        <h2 id="confirmar-titulo">¿Está seguro?</h2>
+        <p id="confirmar-mensaje" class="texto-suave"></p>
+        <div class="formulario-botones">
+            <button type="button" class="boton boton-peligro" id="confirmar-si">Sí, continuar</button>
+            <button type="button" class="boton boton-secundario" id="confirmar-no">Cancelar</button>
+        </div>
+    </dialog>
+
     <partial name="_ScriptsValidacion" />
+    <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

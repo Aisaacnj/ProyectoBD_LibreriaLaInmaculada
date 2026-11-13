@@ -370,50 +370,78 @@ public class VentaRepositorio
 
     // ---------------------------------------------------------------- Devolución parcial
     /// <summary>
-    /// El cliente devuelve SOLO ALGUNOS artículos. En UNA transacción:
-    ///   1. las unidades devueltas regresan al stock,
-    ///   2. la venta original se anula,
-    ///   3. se crea una venta nueva con lo que el cliente se quedó, con los MISMOS precios, costos,
+    /// El cliente devuelve algunos artículos (o todos). En UNA transacción:
+    ///   1. las unidades devueltas EN BUEN ESTADO regresan al stock,
+    ///   2. las que regresaron DAÑADAS no entran al stock: se registran como pérdida
+    ///      con el motivo "Producto dañado o defectuoso",
+    ///   3. la venta original se anula,
+    ///   4. se crea una venta nueva con lo que el cliente se quedó, con los MISMOS precios, costos,
     ///      vendedor y fecha de la original (así los reportes siguen cuadrando).
-    /// devolver: idArticulo → unidades que devuelve.
-    /// Devuelve el error (o null), el número de la venta nueva (null si devolvió todo) y cuántas unidades regresaron.
+    /// devolver: idArticulo → unidades que devuelve.   danadas: idArticulo → de esas, cuántas vienen dañadas.
+    /// Devuelve el error (o null), el número de la venta nueva (null si devolvió todo), cuántas regresaron y cuántas dañadas.
     /// </summary>
-    public async Task<(string? Error, int? VentaNueva, int Devueltas)> DevolverAsync(int idVenta, IDictionary<int, int> devolver)
+    public async Task<(string? Error, int? VentaNueva, int Devueltas, int Danadas)> DevolverAsync(
+        int idVenta, IDictionary<int, int> devolver, IDictionary<int, int> danadas, int idUsuario)
     {
         await using var cn = await _db.AbrirAsync();
         await using var tx = (SqlTransaction)await cn.BeginTransactionAsync();
         try
         {
             var venta = await LeerParaCambiarAsync(cn, tx, idVenta);
-            if (venta.Estado is null) { await tx.RollbackAsync(); return ("La venta no existe.", null, 0); }
-            if (venta.Estado == "Anulada") { await tx.RollbackAsync(); return ("Esta venta ya está anulada.", null, 0); }
+            if (venta.Estado is null) { await tx.RollbackAsync(); return ("La venta no existe.", null, 0, 0); }
+            if (venta.Estado == "Anulada") { await tx.RollbackAsync(); return ("Esta venta ya está anulada.", null, 0, 0); }
 
             // Revisar las cantidades
             foreach (var l in venta.Lineas)
             {
                 int n = devolver.TryGetValue(l.IdArticulo, out var x) ? x : 0;
+                int d = danadas.TryGetValue(l.IdArticulo, out var y) ? y : 0;
                 if (n < 0 || n > l.Cantidad)
                 {
                     await tx.RollbackAsync();
-                    return ($"De «{l.Articulo}» se vendieron {l.Cantidad}: puede devolver entre 0 y {l.Cantidad}.", null, 0);
+                    return ($"De «{l.Articulo}» se vendieron {l.Cantidad}: puede devolver entre 0 y {l.Cantidad}.", null, 0, 0);
+                }
+                if (d < 0 || d > n)
+                {
+                    await tx.RollbackAsync();
+                    return ($"De «{l.Articulo}» se devuelven {n}: las dañadas pueden ser entre 0 y {n}.", null, 0, 0);
                 }
             }
             int devueltas = venta.Lineas.Sum(l => devolver.TryGetValue(l.IdArticulo, out var x) ? x : 0);
             if (devueltas == 0)
             {
                 await tx.RollbackAsync();
-                return ("Escriba cuántas unidades de cada artículo devuelve el cliente.", null, 0);
+                return ("Escriba cuántas unidades de cada artículo devuelve el cliente.", null, 0, 0);
+            }
+            int totalDanadas = venta.Lineas.Sum(l => danadas.TryGetValue(l.IdArticulo, out var y) ? y : 0);
+
+            int? idMotivoDanado = null;
+            if (totalDanadas > 0)
+            {
+                idMotivoDanado = await PerdidaRepositorio.BuscarMotivoAsync(cn, tx, PerdidaRepositorio.MotivoDanado);
+                if (idMotivoDanado is null)
+                {
+                    await tx.RollbackAsync();
+                    return ($"Falta el motivo de pérdida «{PerdidaRepositorio.MotivoDanado}». Agréguelo en Pérdidas y vuelva a intentar.", null, 0, 0);
+                }
             }
 
-            // 1. Lo devuelto regresa al stock
+            // 1 y 2. Lo bueno regresa al stock; lo dañado queda registrado como pérdida
             foreach (var l in venta.Lineas)
-                if (devolver.TryGetValue(l.IdArticulo, out var n) && n > 0)
-                    await CambiarStockAsync(cn, tx, l.IdArticulo, n);
+            {
+                int n = devolver.TryGetValue(l.IdArticulo, out var x) ? x : 0;
+                int d = danadas.TryGetValue(l.IdArticulo, out var y) ? y : 0;
+                if (n - d > 0)
+                    await CambiarStockAsync(cn, tx, l.IdArticulo, n - d);
+                if (d > 0)
+                    await PerdidaRepositorio.InsertarAsync(cn, tx, l.IdArticulo, idMotivoDanado!.Value, idUsuario, d,
+                                                           $"El cliente lo devolvió dañado (venta #{idVenta})");
+            }
 
-            // 2. Anular la original
+            // 3. Anular la original
             await MarcarAnuladaAsync(cn, tx, idVenta);
 
-            // 3. Venta nueva con lo que se queda el cliente (si se queda con algo)
+            // 4. Venta nueva con lo que se queda el cliente (si se queda con algo)
             var quedan = venta.Lineas
                 .Select(l => (Linea: l, Cantidad: l.Cantidad - (devolver.TryGetValue(l.IdArticulo, out var n) ? n : 0)))
                 .Where(q => q.Cantidad > 0)
@@ -438,7 +466,7 @@ public class VentaRepositorio
             }
 
             await tx.CommitAsync();
-            return (null, ventaNueva, devueltas);
+            return (null, ventaNueva, devueltas, totalDanadas);
         }
         catch
         {

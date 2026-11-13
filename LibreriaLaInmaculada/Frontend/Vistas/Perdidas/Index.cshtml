@@ -1,0 +1,174 @@
+@model PerdidasIndexViewModel
+@{
+    ViewData["Title"] = "Pérdidas";
+    ViewData["Descripcion"] = "Lo que sale del inventario sin venderse: dañado, seco, faltante, defecto de fábrica o uso interno.";
+    bool hayFiltros = Model.Desde != null || Model.Hasta != null || Model.IdMotivo != null || Model.Buscar != null;
+    decimal mayor = Model.PorMotivo.Count > 0 ? Model.PorMotivo.Max(m => m.Costo) : 0;
+}
+
+@section BannerDerecha {
+    <a class="banner-accion" asp-action="Nueva">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+        Registrar pérdida
+    </a>
+}
+
+<div class="kpis">
+    <div class="tarjeta kpi">
+        <div class="kpi-icono rojo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Perdidas" /></svg></div>
+        <span class="kpi-titulo">Registros @(hayFiltros ? "filtrados" : "en total")</span>
+        <span class="kpi-valor">@Model.Perdidas.Count</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono ambar"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Inventario" /></svg></div>
+        <span class="kpi-titulo">Unidades perdidas</span>
+        <span class="kpi-valor">@Model.TotalUnidades.ToString("N0")</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono rojo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Dinero" /></svg></div>
+        <span class="kpi-titulo">Costo aproximado</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(Model.TotalCosto)</span>
+    </div>
+</div>
+
+<div class="fila">
+    <section class="tarjeta crece" aria-labelledby="titulo-perdidas">
+        <h2 id="titulo-perdidas" class="solo-lector">Lista de pérdidas</h2>
+
+        <form method="get" asp-action="Index" class="filtros">
+            <div class="campo crece">
+                <label for="buscar">Artículo</label>
+                <div class="con-icono">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Buscar" /></svg>
+                    <input id="buscar" name="buscar" type="search" value="@Model.Buscar" placeholder="Parte del nombre" />
+                </div>
+            </div>
+            <div class="campo">
+                <label for="motivo">Motivo</label>
+                <select id="motivo" name="motivo">
+                    <option value="">Todos</option>
+                    @foreach (var m in Model.Motivos)
+                    {
+                        <option value="@m.IdMotivo" selected="@(Model.IdMotivo == m.IdMotivo)">@m.Descripcion</option>
+                    }
+                </select>
+            </div>
+            <div class="campo">
+                <label for="desde">Desde</label>
+                <input id="desde" name="desde" type="date" value="@(Model.Desde?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="campo">
+                <label for="hasta">Hasta</label>
+                <input id="hasta" name="hasta" type="date" value="@(Model.Hasta?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="filtros-botones">
+                <button type="submit" class="boton boton-principal chico">Filtrar</button>
+                @if (hayFiltros)
+                {
+                    <a class="boton boton-secundario chico" asp-action="Index">Quitar filtros</a>
+                }
+            </div>
+        </form>
+
+        @if (Model.Perdidas.Count == 0)
+        {
+            <p class="vacio-lista">No hay pérdidas con esos filtros.</p>
+        }
+        else
+        {
+            <div class="tabla-caja">
+                <table class="tabla" data-ver-mas="10">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Artículo</th>
+                            <th>Motivo</th>
+                            <th class="derecha">Cantidad</th>
+                            <th class="derecha">Costo aprox.</th>
+                            <th>Registró</th>
+                            <th><span class="solo-lector">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Perdidas)
+                        {
+                            <tr>
+                                <td class="sin-saltos">@Formato.Fecha(p.FechaRegistro)</td>
+                                <td>
+                                    <span class="fuerte">@p.Articulo</span>
+                                    @if (p.Observacion != null)
+                                    {
+                                        <span class="texto-pequeno">@p.Observacion</span>
+                                    }
+                                </td>
+                                <td>@p.Motivo</td>
+                                <td class="derecha">@p.Cantidad.ToString("N0")</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(p.CostoAproximado)</td>
+                                <td class="texto-suave">@p.RegistradoPor</td>
+                                <td>
+                                    @if (p.SePuedeCorregir)
+                                    {
+                                        <form method="post" asp-action="Eliminar" asp-route-id="@p.IdPerdida" class="acciones"
+                                              data-confirmar-titulo="¿Eliminar este registro de pérdida?"
+                                              data-confirmar="Las @p.Cantidad unidades de «@p.Articulo» regresarán al inventario. Úselo solo para corregir un error."
+                                              data-confirmar-boton="Sí, eliminar">
+                                            <button type="submit" class="boton-tabla peligro" title="Eliminar (corregir un error de hoy)"
+                                                    aria-label="Eliminar la pérdida de @p.Articulo">
+                                                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="texto-pequeno">
+                El costo aproximado usa el costo actual (sin IVA) de cada artículo. Un registro se puede eliminar
+                solo el mismo día en que se hizo, para corregir errores; después queda en el historial.
+            </p>
+        }
+    </section>
+
+    <div class="columna-lateral">
+        <section class="tarjeta" aria-labelledby="titulo-motivos-resumen">
+            <h2 id="titulo-motivos-resumen">Por motivo</h2>
+            @if (Model.PorMotivo.Count == 0)
+            {
+                <p class="texto-suave">Sin pérdidas en este filtro.</p>
+            }
+            @foreach (var m in Model.PorMotivo)
+            {
+                <div class="top-item">
+                    <div class="top-linea">
+                        <span>@m.Motivo</span>
+                        <strong class="sin-saltos">@Formato.Cordobas(m.Costo)</strong>
+                    </div>
+                    <div class="top-pista"><div class="top-relleno rojo" style="width: @(Formato.Css(mayor > 0 ? (double)(m.Costo / mayor) * 100 : 0))%"></div></div>
+                    <span class="texto-pequeno">@m.Unidades.ToString("N0") @(m.Unidades == 1 ? "unidad" : "unidades") en @m.Registros @(m.Registros == 1 ? "registro" : "registros")</span>
+                </div>
+            }
+        </section>
+
+        <section class="tarjeta" aria-labelledby="titulo-motivos">
+            <h2 id="titulo-motivos">Motivos</h2>
+            <ul class="lista-simple">
+                @foreach (var m in Model.Motivos)
+                {
+                    <li><span>@m.Descripcion</span><span class="texto-suave">@m.TotalRegistros</span></li>
+                }
+            </ul>
+            <form method="post" asp-action="NuevoMotivo" class="formulario">
+                <div class="campo">
+                    <label for="descripcion">Agregar motivo</label>
+                    <input id="descripcion" name="descripcion" minlength="3" maxlength="150" required placeholder="Por ejemplo: Mojado por lluvia" />
+                </div>
+                <button type="submit" class="boton boton-secundario chico">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+                    Agregar
+                </button>
+            </form>
+        </section>
+    </div>
+</div>

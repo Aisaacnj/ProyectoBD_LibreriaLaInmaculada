@@ -101,7 +101,9 @@
                     La compra no se borra: queda marcada como anulada.
                 </p>
                 <form method="post" asp-action="Anular" asp-route-id="@Model.IdCompra"
-                      onsubmit="return confirm('¿Anular la compra #@(Model.IdCompra)? Se restarán sus unidades del inventario.');">
+                      data-confirmar-titulo="¿Anular la compra #@(Model.IdCompra)?"
+                      data-confirmar="Se restarán del inventario las @(Model.Lineas.Sum(l => l.Cantidad).ToString("N0")) unidades que entraron. La compra no se borra: queda marcada como anulada."
+                      data-confirmar-boton="Sí, anular compra">
                     <button type="submit" class="boton boton-peligro chico">
                         <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
                         Anular compra

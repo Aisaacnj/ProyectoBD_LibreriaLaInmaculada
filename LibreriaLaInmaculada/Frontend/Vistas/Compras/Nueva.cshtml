@@ -394,7 +394,7 @@
             e.preventDefault();
             const costo = parseFloat(formArticulo.PrecioCompra.value);
             const precio = parseFloat(formArticulo.PrecioVenta.value);
-            if (!formArticulo.reportValidity()) return;
+            // (los campos vacíos o fuera de rango ya los marcó site.js con mensajes en español)
             if (precio < costo) {
                 mostrarErrores(['El precio de venta no puede ser menor que el costo: se vendería con pérdida.']);
                 return;

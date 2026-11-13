@@ -1,0 +1,339 @@
+@model ReportesViewModel
+@{
+    ViewData["Title"] = "Reportes";
+    ViewData["Descripcion"] = "Cómo le fue a la librería: ventas, ganancia, compras, pérdidas e inventario.";
+    ViewData["Subtitulo"] = Model.NombrePeriodo;
+    var r = Model.Resumen;
+
+    decimal maximoGrafica = Model.VentasPorPeriodo.Count > 0 ? Model.VentasPorPeriodo.Max(p => p.Total) : 0;
+    bool variosAnios = Model.VentasPorPeriodo.Select(p => p.Periodo.Year).Distinct().Count() > 1;
+    decimal maximoCategoria = Model.PorCategoria.Count > 0 ? Model.PorCategoria.Max(c => c.Total) : 0;
+    decimal totalCategorias = Model.PorCategoria.Sum(c => c.Total);
+    decimal maximoMotivo = Model.PerdidasPorMotivo.Count > 0 ? Model.PerdidasPorMotivo.Max(m => m.Costo) : 0;
+
+    string Etiqueta(DateTime f) => Model.PorDia
+        ? f.Day.ToString()
+        : Formato.MesCorto(f.Month) + (variosAnios ? " " + (f.Year % 100).ToString("00") : "");
+    string ClasePeriodo(string p) => Model.Periodo == p ? "chip activo" : "chip";
+}
+
+@section BannerDerecha {
+    <button type="button" class="banner-accion secundaria" onclick="window.print()">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Imprimir" /></svg>
+        Imprimir
+    </button>
+}
+
+@* ---------- Elegir el período ---------- *@
+<section class="tarjeta no-imprimir" aria-label="Período del reporte">
+    <div class="periodos">
+        <a class="@ClasePeriodo("mes")" asp-action="Index" asp-route-periodo="mes">Este mes</a>
+        <a class="@ClasePeriodo("mesanterior")" asp-action="Index" asp-route-periodo="mesanterior">Mes anterior</a>
+        <a class="@ClasePeriodo("anio")" asp-action="Index" asp-route-periodo="anio">Este año</a>
+        <a class="@ClasePeriodo("todo")" asp-action="Index" asp-route-periodo="todo">Todo</a>
+    </div>
+    <form method="get" asp-action="Index" class="filtros">
+        <div class="campo">
+            <label for="desde">Desde</label>
+            <input id="desde" name="desde" type="date" value="@(Model.Periodo == "personalizado" ? Model.Desde?.ToString("yyyy-MM-dd") : "")" />
+        </div>
+        <div class="campo">
+            <label for="hasta">Hasta</label>
+            <input id="hasta" name="hasta" type="date" value="@(Model.Periodo == "personalizado" ? Model.Hasta?.ToString("yyyy-MM-dd") : "")" />
+        </div>
+        <div class="filtros-botones">
+            <button type="submit" class="boton boton-principal chico">Ver estas fechas</button>
+        </div>
+    </form>
+</section>
+
+<h2 class="titulo-impresion">Reporte · @Model.NombrePeriodo</h2>
+
+@* ---------- Números grandes ---------- *@
+<div class="kpis">
+    <div class="tarjeta kpi">
+        <div class="kpi-icono azul"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Dinero" /></svg></div>
+        <span class="kpi-titulo">Vendido</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(r.Vendido)</span>
+        <span class="texto-pequeno">@r.Ventas.ToString("N0") ventas · @r.UnidadesVendidas.ToString("N0") unidades · promedio @Formato.Cordobas(r.TicketPromedio)</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono verde"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Subida" /></svg></div>
+        <span class="kpi-titulo">Ganancia de las ventas</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(r.Ganancia)</span>
+        <span class="texto-pequeno">Margen @r.MargenPorcentaje.ToString("0.#") % sobre lo vendido</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono indigo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Compras" /></svg></div>
+        <span class="kpi-titulo">Comprado (con IVA)</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(r.Comprado)</span>
+        <span class="texto-pequeno">@r.Compras.ToString("N0") compras · IVA pagado @Formato.Cordobas(r.IvaPagado)</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono rojo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Perdidas" /></svg></div>
+        <span class="kpi-titulo">Pérdidas (costo aprox.)</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(r.CostoPerdidas)</span>
+        <span class="texto-pequeno">@r.UnidadesPerdidas.ToString("N0") unidades</span>
+    </div>
+</div>
+
+<section class="tarjeta resultado" aria-labelledby="titulo-resultado">
+    <div>
+        <h2 id="titulo-resultado">Resultado aproximado del período</h2>
+        <p class="texto-suave">
+            Ganancia de las ventas (@Formato.Cordobas(r.Ganancia)) menos pérdidas (@Formato.Cordobas(r.CostoPerdidas)).
+            No incluye gastos como luz o alquiler. Los costos se toman sin IVA.
+            @if (r.VentasAnuladas > 0)
+            {
+                <span>No cuenta @r.VentasAnuladas @(r.VentasAnuladas == 1 ? "venta anulada" : "ventas anuladas").</span>
+            }
+        </p>
+    </div>
+    <strong class="resultado-valor @(r.ResultadoAproximado < 0 ? "negativo" : "")">@Formato.Cordobas(r.ResultadoAproximado)</strong>
+</section>
+
+@* ---------- Gráfica de ventas ---------- *@
+<section class="tarjeta" aria-labelledby="titulo-grafica">
+    <h2 id="titulo-grafica">Ventas por @(Model.PorDia ? "día" : "mes")</h2>
+    @if (maximoGrafica > 0)
+    {
+        <div class="barras @(Model.VentasPorPeriodo.Count > 16 ? "barras-densas" : "")" role="img" aria-label="Gráfico de barras de ventas por @(Model.PorDia ? "día" : "mes")">
+            @foreach (var p in Model.VentasPorPeriodo)
+            {
+                var alto = (double)(p.Total / maximoGrafica) * 170;
+                var clase = p.Total == maximoGrafica ? "barra destacada" : "barra";
+                <div class="barra-columna" title="@(Model.PorDia ? Formato.Fecha(p.Periodo) : Formato.Mes(p.Periodo.Month) + " " + p.Periodo.Year): @Formato.Cordobas(p.Total) en @p.Ventas ventas">
+                    <span class="barra-valor">@(p.Total >= 1000 ? (p.Total / 1000m).ToString("0.0") + "k" : p.Total.ToString("0"))</span>
+                    <div class="@clase" style="height: @(Formato.Css(Math.Max(alto, p.Total > 0 ? 2 : 0)))px"></div>
+                    <span class="barra-mes">@Etiqueta(p.Periodo)</span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="vacio-lista">No hay ventas en este período.</p>
+    }
+</section>
+
+<div class="fila">
+    @* ---------- Artículos más vendidos ---------- *@
+    <section class="tarjeta crece" aria-labelledby="titulo-top">
+        <h2 id="titulo-top">Artículos más vendidos</h2>
+        @if (Model.MasVendidos.Count == 0)
+        {
+            <p class="vacio-lista">Sin ventas en este período.</p>
+        }
+        else
+        {
+            <div class="tabla-caja">
+                <table class="tabla" data-ver-mas="10">
+                    <thead>
+                        <tr><th>#</th><th>Artículo</th><th class="derecha">Unidades</th><th class="derecha">Vendido</th><th class="derecha">Ganancia</th></tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.MasVendidos.Count; i++)
+                        {
+                            var a = Model.MasVendidos[i];
+                            <tr>
+                                <td class="texto-suave">@(i + 1)</td>
+                                <td><span class="fuerte">@a.Articulo</span><span class="texto-pequeno">@a.Categoria</span></td>
+                                <td class="derecha">@a.Unidades.ToString("N0")</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(a.Total)</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(a.Ganancia)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @* ---------- Por categoría ---------- *@
+    <section class="tarjeta columna-lateral" aria-labelledby="titulo-categorias">
+        <h2 id="titulo-categorias">Ventas por categoría</h2>
+        @if (Model.PorCategoria.Count == 0)
+        {
+            <p class="texto-suave">Sin ventas en este período.</p>
+        }
+        @foreach (var c in Model.PorCategoria)
+        {
+            <div class="top-item">
+                <div class="top-linea">
+                    <span>@c.Nombre</span>
+                    <strong class="sin-saltos">@Formato.Cordobas(c.Total)</strong>
+                </div>
+                <div class="top-pista"><div class="top-relleno" style="width: @(Formato.Css(maximoCategoria > 0 ? (double)(c.Total / maximoCategoria) * 100 : 0))%"></div></div>
+                <span class="texto-pequeno">
+                    @(totalCategorias > 0 ? (c.Total / totalCategorias * 100).ToString("0.#") : "0") % de lo vendido ·
+                    @c.Unidades.ToString("N0") unidades · ganancia @Formato.Cordobas(c.Extra)
+                </span>
+            </div>
+        }
+    </section>
+</div>
+
+<div class="fila">
+    @* ---------- Por vendedor ---------- *@
+    <section class="tarjeta crece" aria-labelledby="titulo-vendedores">
+        <h2 id="titulo-vendedores">Ventas por vendedor</h2>
+        @if (Model.PorVendedor.Count == 0)
+        {
+            <p class="vacio-lista">Sin ventas en este período.</p>
+        }
+        else
+        {
+            <div class="tabla-caja">
+                <table class="tabla" data-ver-mas="10">
+                    <thead>
+                        <tr><th>Vendedor</th><th class="derecha">Ventas</th><th class="derecha">Unidades</th><th class="derecha">Vendido</th><th class="derecha">Ganancia</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in Model.PorVendedor)
+                        {
+                            <tr>
+                                <td class="fuerte">@v.Nombre</td>
+                                <td class="derecha">@v.Cantidad.ToString("N0")</td>
+                                <td class="derecha">@v.Unidades.ToString("N0")</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(v.Total)</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(v.Extra)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    @* ---------- Compras por proveedor ---------- *@
+    <section class="tarjeta crece" aria-labelledby="titulo-proveedores">
+        <h2 id="titulo-proveedores">Compras por proveedor</h2>
+        @if (Model.ComprasPorProveedor.Count == 0)
+        {
+            <p class="vacio-lista">Sin compras en este período.</p>
+        }
+        else
+        {
+            <div class="tabla-caja">
+                <table class="tabla" data-ver-mas="10">
+                    <thead>
+                        <tr><th>Proveedor</th><th class="derecha">Compras</th><th class="derecha">Unidades</th><th class="derecha">Total</th><th class="derecha">IVA</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.ComprasPorProveedor)
+                        {
+                            <tr>
+                                <td class="fuerte">@p.Nombre</td>
+                                <td class="derecha">@p.Cantidad.ToString("N0")</td>
+                                <td class="derecha">@p.Unidades.ToString("N0")</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(p.Total)</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(p.Extra)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+<div class="fila">
+    @* ---------- Pérdidas por motivo ---------- *@
+    <section class="tarjeta columna-lateral" aria-labelledby="titulo-perdidas">
+        <h2 id="titulo-perdidas">Pérdidas por motivo</h2>
+        @if (Model.PerdidasPorMotivo.Count == 0)
+        {
+            <p class="texto-suave">Sin pérdidas en este período.</p>
+        }
+        @foreach (var m in Model.PerdidasPorMotivo)
+        {
+            <div class="top-item">
+                <div class="top-linea">
+                    <span>@m.Motivo</span>
+                    <strong class="sin-saltos">@Formato.Cordobas(m.Costo)</strong>
+                </div>
+                <div class="top-pista"><div class="top-relleno rojo" style="width: @(Formato.Css(maximoMotivo > 0 ? (double)(m.Costo / maximoMotivo) * 100 : 0))%"></div></div>
+                <span class="texto-pequeno">@m.Unidades.ToString("N0") @(m.Unidades == 1 ? "unidad" : "unidades")</span>
+            </div>
+        }
+    </section>
+
+    @* ---------- Reabastecer ---------- *@
+    <section class="tarjeta crece" aria-labelledby="titulo-reabastecer">
+        <h2 id="titulo-reabastecer">Para comprar ya</h2>
+        <p class="texto-suave">
+            Artículos en su stock mínimo o por debajo (hoy, no depende del período).
+            Sugerido: lo que falta para llegar al doble del mínimo.
+            @if (Model.PorReabastecer.Count > 0)
+            {
+                <span>Costo estimado de todo: <strong>@Formato.Cordobas(Model.PorReabastecer.Sum(x => x.CostoSugerido))</strong> (sin IVA).</span>
+            }
+        </p>
+        @if (Model.PorReabastecer.Count == 0)
+        {
+            <p class="vacio-lista">Todos los artículos tienen stock suficiente.</p>
+        }
+        else
+        {
+            <div class="tabla-caja">
+                <table class="tabla" data-ver-mas="10">
+                    <thead>
+                        <tr><th>Artículo</th><th class="derecha">Hay</th><th class="derecha">Mínimo</th><th class="derecha">Sugerido</th><th class="derecha">Costo aprox.</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.PorReabastecer)
+                        {
+                            <tr>
+                                <td><span class="fuerte">@a.Articulo</span><span class="texto-pequeno">@a.Categoria</span></td>
+                                <td class="derecha">
+                                    @if (a.Stock == 0)
+                                    {
+                                        <span class="insignia rojo">Agotado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="insignia ambar">@a.Stock</span>
+                                    }
+                                </td>
+                                <td class="derecha texto-suave">@a.Minimo</td>
+                                <td class="derecha fuerte">@a.Sugerido</td>
+                                <td class="derecha sin-saltos">@Formato.Cordobas(a.CostoSugerido)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@* ---------- Sin movimiento ---------- *@
+<section class="tarjeta" aria-labelledby="titulo-parados">
+    <h2 id="titulo-parados">Artículos que no se vendieron en el período</h2>
+    <p class="texto-suave">Tienen stock pero ninguna venta: es dinero parado. Ordenados por lo que valen al costo.</p>
+    @if (Model.SinMovimiento.Count == 0)
+    {
+        <p class="vacio-lista">Todos los artículos con stock tuvieron ventas en este período.</p>
+    }
+    else
+    {
+        <div class="tabla-caja">
+            <table class="tabla" data-ver-mas="10">
+                <thead>
+                    <tr><th>Artículo</th><th>Categoría</th><th class="derecha">Stock</th><th class="derecha">Valor al costo</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.SinMovimiento)
+                    {
+                        <tr>
+                            <td class="fuerte">@a.Articulo</td>
+                            <td>@a.Categoria</td>
+                            <td class="derecha">@a.Stock.ToString("N0")</td>
+                            <td class="derecha sin-saltos">@Formato.Cordobas(a.Valor)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

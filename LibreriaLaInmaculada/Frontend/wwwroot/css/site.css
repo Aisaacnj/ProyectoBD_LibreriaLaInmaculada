@@ -28,6 +28,9 @@
 
 * { box-sizing: border-box; }
 
+/* Lo que tiene el atributo hidden se oculta siempre, aunque su clase diga otra cosa */
+[hidden] { display: none !important; }
+
 body {
     margin: 0;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -459,6 +462,22 @@ h2 { font-size: 17px; font-weight: 800; }
 .dialogo-encabezado { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .dialogo .campo select { font: inherit; font-size: 16px; }
 
+/* Ventana de confirmación del sistema */
+.dialogo-confirmar { width: min(440px, calc(100% - 32px)); text-align: center; }
+.dialogo-confirmar h2 { font-size: 20px; margin-top: 4px; }
+.dialogo-confirmar p { margin: 8px 0 18px; line-height: 1.5; }
+.dialogo-confirmar .formulario-botones { justify-content: center; }
+.confirmar-icono {
+    width: 56px; height: 56px; margin: 0 auto 10px; border-radius: 18px;
+    background: var(--rojo-claro); color: var(--rojo-texto);
+    display: flex; align-items: center; justify-content: center;
+}
+.confirmar-icono .icono { width: 28px; height: 28px; }
+.dialogo-confirmar.normal .confirmar-icono { background: var(--azul-claro); color: var(--azul); }
+
+/* Mensajes de error que pone site.js */
+.js-error-nativo { display: block; margin-top: 2px; }
+
 /* Validación en el navegador */
 .mayusculas { text-transform: uppercase; }
 .tabla-lineas .input-validation-error, .tabla-lineas select:invalid:focus { border-color: var(--rojo-texto); }
@@ -513,10 +532,11 @@ button.banner-accion.secundaria { border: 1.5px solid rgba(255, 255, 255, .55); 
 .ticket-gracias { margin: 4px 0 0; text-align: center; font-weight: 700; color: var(--tinta-suave); }
 
 /* Devolución */
-.fila-devolucion { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.fila-devolucion label { font-size: 14px; font-weight: 700; }
+.fila-devolucion { display: grid; grid-template-columns: 1fr 76px 76px; align-items: center; gap: 8px; }
+.fila-devolucion.encabezado { font-size: 12px; font-weight: 700; color: var(--tinta-suave); }
+.fila-devolucion-nombre { font-size: 14px; font-weight: 700; }
 .fila-devolucion input {
-    width: 84px; font: inherit; font-size: 15px; padding: 9px 10px; text-align: center;
+    width: 100%; font: inherit; font-size: 15px; padding: 9px 6px; text-align: center;
     border: 1.5px solid var(--borde); border-radius: 12px; background: #F7FAFB;
 }
 
@@ -527,6 +547,45 @@ button.banner-accion.secundaria { border: 1.5px solid rgba(255, 255, 255, .55); 
     .app { display: block; padding: 0; }
     .ticket { box-shadow: none; padding: 0; max-width: 420px; }
     .tabla tbody tr:nth-child(odd) { background: transparent; }
+}
+
+/* ======================================================================
+   Etapa 5: Pérdidas, Reportes y "Ver más"
+   ====================================================================== */
+/* "Ver más" en listas largas */
+.fila-oculta { display: none; }
+.ver-mas { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.ver-mas-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.ver-mas .boton.chico { min-height: 40px; font-size: 14px; }
+
+/* Barras de color en resúmenes */
+.top-relleno.rojo { background: var(--rojo-texto); }
+.lista-simple { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lista-simple li { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #E6EEF1; }
+
+/* Reportes */
+.periodos { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+    text-decoration: none; font-size: 14px; font-weight: 700; color: var(--azul-oscuro);
+    padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--borde); background: var(--blanco);
+}
+.chip:hover { border-color: var(--azul); color: var(--azul-oscuro); }
+.chip.activo { background: var(--azul); border-color: var(--azul); color: var(--blanco); }
+.kpi .texto-pequeno { margin-top: -4px; }
+.resultado { flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.resultado > div { flex: 1 1 360px; display: flex; flex-direction: column; gap: 6px; }
+.resultado-valor { font-size: 30px; font-weight: 800; color: var(--verde); }
+.resultado-valor.negativo { color: var(--rojo-texto); }
+.barras-densas { gap: 3px; }
+.barras-densas .barra-valor { display: none; }
+.barras-densas .barra-mes { font-size: 10px; }
+.titulo-impresion { display: none; }
+
+@media print {
+    .fila-oculta { display: table-row !important; }
+    .titulo-impresion { display: block; font-size: 20px; margin-bottom: 8px; }
+    .tarjeta { box-shadow: none; border: 1px solid #DDE6E9; break-inside: avoid; }
+    .contenido { gap: 10px; }
 }
 
 /* ---------- Teléfono / pantallas angostas ---------- */
