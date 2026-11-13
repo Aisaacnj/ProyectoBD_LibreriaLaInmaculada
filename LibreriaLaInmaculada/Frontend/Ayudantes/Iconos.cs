@@ -30,5 +30,6 @@ public static class Iconos
     public const string Activar = "M20 6 9 17l-5-5";
     public const string Desactivar = "M18 6 6 18M6 6l12 12";
     public const string Ver = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z";
+    public const string Imprimir = "M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z";
     public const string Herramienta ="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z";
 }

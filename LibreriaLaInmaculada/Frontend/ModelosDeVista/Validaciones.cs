@@ -29,6 +29,10 @@ public static class Validaciones
     public const decimal CostoMaximo = 100000m;
     public static readonly DateTime FechaMinima = new(2020, 1, 1);
 
+    // Límites de las ventas
+    public const int CantidadMaximaVenta = 1000;     // unidades de un mismo artículo en una venta
+    public const decimal PagoMaximo = 100000m;       // "Paga con"
+
     /// <summary>
     /// Quita espacios al inicio y al final, y deja un solo espacio entre palabras:
     /// "  Lápiz   HB " → "Lápiz HB". Así no se cuelan nombres repetidos que solo difieren en espacios.

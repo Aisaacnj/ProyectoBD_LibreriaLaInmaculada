@@ -464,6 +464,71 @@ h2 { font-size: 17px; font-weight: 800; }
 .tabla-lineas .input-validation-error, .tabla-lineas select:invalid:focus { border-color: var(--rojo-texto); }
 .tabla-lineas .error-linea { display: block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--rojo-texto); white-space: normal; }
 
+/* ======================================================================
+   Etapa 4: Vender y Ventas
+   ====================================================================== */
+button.banner-accion { border: 0; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+button.banner-accion.secundaria { border: 1.5px solid rgba(255, 255, 255, .55); }
+
+/* Punto de venta: carrito a la izquierda, cobro a la derecha */
+.pos { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.pos-errores { flex-basis: 100%; }
+.pos-errores.validation-summary-valid { display: none; }
+.pos-carrito { flex: 999 1 520px; min-width: 0; }
+.pos-cobro { flex: 1 1 280px; max-width: 380px; position: sticky; top: 16px; }
+.pos-buscar { display: flex; gap: 10px; align-items: stretch; }
+.pos-buscar .con-icono { flex: 1; min-width: 0; }
+.pos-buscar input {
+    font: inherit; font-size: 17px; width: 100%; padding: 14px 14px 14px 42px;
+    border: 1.5px solid var(--borde); border-radius: 14px; background: #F7FAFB;
+}
+.pos-buscar input:focus { outline: 3px solid var(--azul-claro); border-color: var(--azul); background: var(--blanco); }
+.pos-buscar .boton { min-height: 52px; }
+
+.tabla-carrito td { vertical-align: middle; }
+.tabla-carrito .texto-pequeno { margin-top: 2px; }
+.col-cantidad { width: 170px; }
+.contador { display: flex; align-items: center; gap: 6px; }
+.contador .boton-tabla { width: 38px; height: 38px; font-size: 20px; font-weight: 800; line-height: 1; }
+.tabla-lineas .contador input { width: 70px; text-align: center; padding: 9px 6px; }
+
+.vuelto {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: var(--verde-claro); color: #1E5E22; border-radius: 16px; padding: 14px 16px;
+}
+.vuelto span { font-weight: 700; }
+.vuelto strong { font-size: 22px; font-weight: 800; }
+.vuelto strong.falta { color: var(--rojo-texto); font-size: 18px; }
+.boton-cobrar { width: 100%; min-height: 60px; font-size: 19px; }
+.boton-cobrar:disabled { background: #9DB6BF; cursor: not-allowed; }
+.pos-cobro > .boton-secundario { width: 100%; }
+
+/* Comprobante */
+.ticket-encabezado { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ticket-encabezado h2 { font-size: 20px; }
+.ticket-datos { margin: 0; display: flex; flex-wrap: wrap; gap: 10px 32px; }
+.ticket-datos dt { font-size: 12px; font-weight: 700; color: var(--tinta-suave); }
+.ticket-datos dd { margin: 2px 0 0; font-weight: 800; }
+.vuelto-ticket dd { color: #1E5E22; }
+.ticket-gracias { margin: 4px 0 0; text-align: center; font-weight: 700; color: var(--tinta-suave); }
+
+/* Devolución */
+.fila-devolucion { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.fila-devolucion label { font-size: 14px; font-weight: 700; }
+.fila-devolucion input {
+    width: 84px; font: inherit; font-size: 15px; padding: 9px 10px; text-align: center;
+    border: 1.5px solid var(--borde); border-radius: 12px; background: #F7FAFB;
+}
+
+/* Al imprimir solo sale el comprobante */
+@media print {
+    body, .fondo-puntos { background: #fff !important; }
+    .menu, .banner, .aviso, .no-imprimir { display: none !important; }
+    .app { display: block; padding: 0; }
+    .ticket { box-shadow: none; padding: 0; max-width: 420px; }
+    .tabla tbody tr:nth-child(odd) { background: transparent; }
+}
+
 /* ---------- Teléfono / pantallas angostas ---------- */
 @media (max-width: 720px) {
     .menu { max-width: none; min-height: 0; }
@@ -472,4 +537,6 @@ h2 { font-size: 17px; font-weight: 800; }
     .login-tarjeta, .login-portada { padding: 24px; }
     .formulario-tarjeta { padding: 20px; }
     .filtros-botones { width: 100%; }
+    .pos-cobro { max-width: none; position: static; }
+    .pos-buscar { flex-wrap: wrap; }
 }

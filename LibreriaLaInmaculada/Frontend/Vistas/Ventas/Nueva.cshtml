@@ -1,0 +1,305 @@
+@model VentaNuevaViewModel
+@{
+    ViewData["Title"] = "Vender";
+    ViewData["Descripcion"] = "Busque los artículos, ajuste las cantidades y cobre. Los precios los pone el sistema.";
+
+    // Catálogo para el carrito (se arma en el navegador) y lo que ya venía en el carrito si hubo un error
+    var catalogo = Model.Articulos.Select(a => new
+    {
+        id = a.IdArticulo,
+        nombre = a.Descripcion,
+        precio = a.PrecioVenta,
+        stock = a.Cantidad,
+        categoria = a.Categoria
+    });
+    var iniciales = Model.Lineas.Select(l => new { id = l.IdArticulo, cantidad = l.Cantidad });
+}
+
+@section BannerDerecha {
+    <a class="banner-accion secundaria" asp-action="Index">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ventas" /></svg>
+        Ver ventas
+    </a>
+}
+
+@* Lista para el buscador (el navegador la filtra mientras se escribe) *@
+<datalist id="lista-articulos">
+    @foreach (var a in Model.Articulos)
+    {
+        <option value="@a.Descripcion">@(a.Cantidad == 0 ? "Agotado" : $"{Formato.Cordobas(a.PrecioVenta)} · hay {a.Cantidad}")</option>
+    }
+</datalist>
+
+<form method="post" asp-action="Nueva" id="form-venta" class="pos">
+    <div asp-validation-summary="ModelOnly" class="mensaje-error pos-errores" role="alert"></div>
+
+    <section class="tarjeta pos-carrito" aria-labelledby="titulo-carrito">
+        <h2 id="titulo-carrito" class="solo-lector">Artículos de la venta</h2>
+
+        <div class="pos-buscar">
+            <label for="buscar" class="solo-lector">Buscar artículo</label>
+            <div class="con-icono">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Buscar" /></svg>
+                <input id="buscar" list="lista-articulos" autocomplete="off" autofocus
+                       placeholder="Escriba el artículo y presione Enter. Ej.: lápiz" />
+            </div>
+            <button type="button" id="agregar" class="boton boton-principal chico">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Mas" /></svg>
+                Agregar
+            </button>
+        </div>
+        <p class="error-campo" id="aviso-buscar" role="alert" hidden></p>
+
+        <div class="tabla-caja" id="caja-carrito" hidden>
+            <table class="tabla tabla-lineas tabla-carrito">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th class="derecha">Precio</th>
+                        <th>Cantidad</th>
+                        <th class="derecha">Subtotal</th>
+                        <th><span class="solo-lector">Quitar</span></th>
+                    </tr>
+                </thead>
+                <tbody id="carrito"></tbody>
+            </table>
+        </div>
+        <p class="vacio-lista" id="carrito-vacio">Todavía no hay artículos. Búsquelos arriba.</p>
+    </section>
+
+    <aside class="tarjeta pos-cobro" aria-labelledby="titulo-cobro">
+        <h2 id="titulo-cobro">Cobro</h2>
+        <dl class="totales">
+            <div><dt>Unidades</dt><dd id="unidades">0</dd></div>
+            <div class="total-final"><dt>Total a pagar</dt><dd id="total">C$ 0.00</dd></div>
+        </dl>
+
+        <div class="campo">
+            <label asp-for="PagaCon"></label>
+            <input asp-for="PagaCon" type="number" min="0" max="100000" step="0.01" inputmode="decimal"
+                   placeholder="Opcional: para calcular el vuelto"
+                   value="@(Model.PagaCon?.ToString("0.00", CultureInfo.InvariantCulture))" />
+            <span asp-validation-for="PagaCon" class="error-campo"></span>
+            <span class="error-campo" id="aviso-pago" role="alert" hidden></span>
+        </div>
+
+        <div class="vuelto">
+            <span>Vuelto</span>
+            <strong id="vuelto">—</strong>
+        </div>
+
+        <button type="submit" class="boton boton-principal boton-cobrar" id="cobrar" disabled>
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Dinero" /></svg>
+            Cobrar
+        </button>
+        <button type="button" class="boton boton-secundario chico" id="vaciar">Vaciar carrito</button>
+    </aside>
+</form>
+
+@section Scripts {
+<script>
+    // Punto de venta: buscar artículos, armar el carrito, calcular total y vuelto.
+    // El precio que se ve aquí es solo informativo: al cobrar, el servidor lo vuelve a leer de la base.
+    (function () {
+        const catalogo = @Json.Serialize(catalogo);
+        const iniciales = @Json.Serialize(iniciales);
+        const iconoQuitar = '@Iconos.Desactivar';
+        const maximoPorLinea = @Validaciones.CantidadMaximaVenta;
+
+        const buscar = document.getElementById('buscar');
+        const carrito = document.getElementById('carrito');
+        const avisoBuscar = document.getElementById('aviso-buscar');
+        const pagaCon = document.getElementById('PagaCon');
+        const avisoPago = document.getElementById('aviso-pago');
+        const cobrar = document.getElementById('cobrar');
+
+        const clave = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();   // sin tildes ni espacios de más
+        const redondear = n => Math.round((n + Number.EPSILON) * 100) / 100;
+        const cordobas = n => 'C$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const porId = new Map(catalogo.map(a => [a.id, a]));
+        const porNombre = new Map(catalogo.map(a => [clave(a.nombre), a]));
+
+        function avisar(texto) {
+            avisoBuscar.textContent = texto;
+            avisoBuscar.hidden = !texto;
+        }
+
+        // Los nombres deben ir Lineas[0], Lineas[1], ... sin huecos para que ASP.NET los lea
+        function renumerar() {
+            carrito.querySelectorAll('tr.linea').forEach((fila, i) => {
+                fila.querySelectorAll('[data-campo]').forEach(el => el.name = 'Lineas[' + i + '].' + el.dataset.campo);
+                fila.querySelectorAll('[data-campo-msg]').forEach(el =>
+                    el.setAttribute('data-valmsg-for', 'Lineas[' + i + '].' + el.dataset.campoMsg));
+            });
+        }
+
+        function calcular() {
+            let total = 0, unidades = 0;
+            carrito.querySelectorAll('tr.linea').forEach(fila => {
+                const a = porId.get(Number(fila.dataset.id));
+                const cantidad = parseInt(fila.querySelector('.js-cantidad').value) || 0;
+                const subtotal = redondear(cantidad * a.precio);
+                fila.querySelector('.js-subtotal').textContent = cordobas(subtotal);
+                total += subtotal;
+                unidades += cantidad;
+            });
+            total = redondear(total);
+            const hayArticulos = carrito.querySelector('tr.linea') !== null;
+            document.getElementById('total').textContent = cordobas(total);
+            document.getElementById('unidades').textContent = unidades;
+            document.getElementById('caja-carrito').hidden = !hayArticulos;
+            document.getElementById('carrito-vacio').hidden = hayArticulos;
+            cobrar.disabled = !hayArticulos;
+
+            // Vuelto
+            const vuelto = document.getElementById('vuelto');
+            const pago = parseFloat(pagaCon.value);
+            vuelto.classList.remove('falta');
+            if (isNaN(pago) || !hayArticulos) {
+                vuelto.textContent = '—';
+            } else if (pago < total) {
+                vuelto.textContent = 'Faltan ' + cordobas(redondear(total - pago));
+                vuelto.classList.add('falta');
+            } else {
+                vuelto.textContent = cordobas(redondear(pago - total));
+            }
+            if (isNaN(pago) || pago >= total) avisoPago.hidden = true;
+            return total;
+        }
+
+        function crearFila(a, cantidad) {
+            const maximo = Math.min(a.stock, maximoPorLinea);
+            const tr = document.createElement('tr');
+            tr.className = 'linea';
+            tr.dataset.id = a.id;
+            tr.innerHTML =
+                '<td><span class="fuerte js-nombre"></span><span class="texto-pequeno js-info"></span>' +
+                '  <input type="hidden" data-campo="IdArticulo" value="' + a.id + '" /></td>' +
+                '<td class="derecha sin-saltos">' + cordobas(a.precio) + '</td>' +
+                '<td class="col-cantidad"><div class="contador">' +
+                '  <button type="button" class="boton-tabla js-menos" aria-label="Una unidad menos">−</button>' +
+                '  <input type="number" class="js-cantidad" data-campo="Cantidad" min="1" max="' + maximo + '" step="1"' +
+                '         inputmode="numeric" required data-msg-max="Solo hay ' + a.stock + ' en stock." value="' + cantidad + '" />' +
+                '  <button type="button" class="boton-tabla js-mas" aria-label="Una unidad más">+</button></div>' +
+                '  <span class="error-linea" data-campo-msg="Cantidad" data-valmsg-replace="true"></span></td>' +
+                '<td class="derecha fuerte js-subtotal"></td>' +
+                '<td><button type="button" class="boton-tabla peligro js-quitar" title="Quitar">' +
+                '  <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="' + iconoQuitar + '" /></svg></button></td>';
+            // El nombre se pone como texto (nunca como HTML)
+            tr.querySelector('.js-nombre').textContent = a.nombre;
+            tr.querySelector('.js-info').textContent = a.categoria + ' · hay ' + a.stock;
+            tr.querySelector('.js-cantidad').setAttribute('aria-label', 'Cantidad de ' + a.nombre);
+            tr.querySelector('.js-quitar').setAttribute('aria-label', 'Quitar ' + a.nombre);
+            carrito.appendChild(tr);
+            return tr;
+        }
+
+        function agregar(a) {
+            avisar('');
+            if (a.stock === 0) { avisar('«' + a.nombre + '» está agotado.'); return; }
+
+            const existente = carrito.querySelector('tr.linea[data-id="' + a.id + '"]');
+            if (existente) {
+                // Ya estaba en el carrito: se le suma una unidad
+                const campo = existente.querySelector('.js-cantidad');
+                const nueva = (parseInt(campo.value) || 0) + 1;
+                if (nueva > Math.min(a.stock, maximoPorLinea)) {
+                    avisar('De «' + a.nombre + '» solo hay ' + a.stock + ' en stock.');
+                } else {
+                    campo.value = nueva;
+                }
+            } else {
+                crearFila(a, 1);
+            }
+            renumerar();
+            calcular();
+        }
+
+        function buscarYAgregar() {
+            const texto = buscar.value;
+            if (!clave(texto)) return;
+            let a = porNombre.get(clave(texto));
+            if (!a) {
+                const coinciden = catalogo.filter(x => clave(x.nombre).includes(clave(texto)));
+                if (coinciden.length === 1) {
+                    a = coinciden[0];
+                } else {
+                    avisar(coinciden.length > 1
+                        ? 'Hay ' + coinciden.length + ' artículos con «' + texto.trim() + '»: elija uno de la lista.'
+                        : 'No hay ningún artículo con «' + texto.trim() + '».');
+                    return;
+                }
+            }
+            agregar(a);
+            buscar.value = '';
+            buscar.focus();
+        }
+
+        document.getElementById('agregar').addEventListener('click', buscarYAgregar);
+
+        // Al elegir de la lista desplegable se agrega de una vez
+        buscar.addEventListener('input', e => {
+            const elegidoDeLista = e.inputType === 'insertReplacementText' || e.inputType === undefined;
+            if (elegidoDeLista && porNombre.has(clave(buscar.value))) buscarYAgregar();
+        });
+
+        // Enter: en el buscador agrega; en los demás campos NO envía el formulario (solo el botón Cobrar)
+        document.getElementById('form-venta').addEventListener('keydown', e => {
+            if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+            e.preventDefault();
+            if (e.target === buscar) buscarYAgregar();
+        });
+
+        carrito.addEventListener('click', e => {
+            const fila = e.target.closest('tr.linea');
+            if (!fila) return;
+            const campo = fila.querySelector('.js-cantidad');
+            const a = porId.get(Number(fila.dataset.id));
+            if (e.target.closest('.js-quitar')) {
+                fila.remove();
+                renumerar();
+            } else if (e.target.closest('.js-mas')) {
+                const nueva = (parseInt(campo.value) || 0) + 1;
+                if (nueva <= Math.min(a.stock, maximoPorLinea)) campo.value = nueva;
+                else avisar('De «' + a.nombre + '» solo hay ' + a.stock + ' en stock.');
+            } else if (e.target.closest('.js-menos')) {
+                const nueva = (parseInt(campo.value) || 0) - 1;
+                if (nueva >= 1) campo.value = nueva;
+            } else {
+                return;
+            }
+            calcular();
+        });
+        carrito.addEventListener('input', calcular);
+        pagaCon.addEventListener('input', calcular);
+
+        document.getElementById('vaciar').addEventListener('click', () => {
+            carrito.innerHTML = '';
+            pagaCon.value = '';
+            avisar('');
+            calcular();
+            buscar.focus();
+        });
+
+        // Antes de cobrar: si escribió con cuánto paga, debe alcanzar
+        cobrar.addEventListener('click', e => {
+            const total = calcular();
+            const pago = parseFloat(pagaCon.value);
+            if (!isNaN(pago) && pago < total) {
+                e.preventDefault();
+                avisoPago.textContent = 'El pago no alcanza: faltan ' + cordobas(redondear(total - pago)) + '.';
+                avisoPago.hidden = false;
+                pagaCon.focus();
+            }
+        });
+
+        // Si hubo un error al guardar, se vuelve a armar el carrito como estaba
+        iniciales.forEach(l => {
+            const a = porId.get(l.id);
+            if (a) crearFila(a, l.cantidad || 1);
+        });
+        renumerar();
+        calcular();
+    })();
+</script>
+}

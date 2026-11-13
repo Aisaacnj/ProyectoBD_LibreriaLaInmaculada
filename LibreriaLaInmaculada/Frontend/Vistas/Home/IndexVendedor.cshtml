@@ -48,7 +48,7 @@
                         @foreach (var v in Model.UltimasVentas)
                         {
                             <tr>
-                                <td>#@v.IdVenta</td>
+                                <td><a asp-controller="Ventas" asp-action="Detalle" asp-route-id="@v.IdVenta">#@v.IdVenta</a></td>
                                 <td>@Formato.FechaHora(v.Fecha)</td>
                                 <td class="derecha fuerte">@Formato.Cordobas(v.Total)</td>
                                 <td><span class="etiqueta @(v.Estado == "Activa" ? "ok" : "anulada")">@v.Estado</span></td>

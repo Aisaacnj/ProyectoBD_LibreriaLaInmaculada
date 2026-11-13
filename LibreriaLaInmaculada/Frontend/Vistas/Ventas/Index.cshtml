@@ -1,0 +1,162 @@
+@model VentasIndexViewModel
+@{
+    ViewData["Title"] = Model.EsAdmin ? "Ventas" : "Mis ventas";
+    ViewData["Descripcion"] = Model.EsAdmin
+        ? "Todas las ventas con su ganancia. Desde el detalle se anulan o se registran devoluciones."
+        : "Las ventas que usted ha registrado.";
+    bool hayFiltros = Model.Desde != null || Model.Hasta != null || Model.IdVendedor != null || Model.Estado != "Activa";
+    string mes = Formato.Mes(DateTime.Today.Month);
+}
+
+@section BannerDerecha {
+    <a class="banner-accion" asp-action="Nueva">
+        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Vender" /></svg>
+        Nueva venta
+    </a>
+}
+
+<div class="kpis">
+    <div class="tarjeta kpi">
+        <div class="kpi-icono indigo"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ventas" /></svg></div>
+        <span class="kpi-titulo">@(Model.EsAdmin ? "Ventas de hoy" : "Sus ventas de hoy")</span>
+        <span class="kpi-valor">@Model.VentasHoy</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono azul"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Dinero" /></svg></div>
+        <span class="kpi-titulo">Cobrado hoy</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(Model.VendidoHoy)</span>
+    </div>
+    <div class="tarjeta kpi">
+        <div class="kpi-icono verde"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Reportes" /></svg></div>
+        <span class="kpi-titulo">Vendido en @mes</span>
+        <span class="kpi-valor">@Formato.CordobasRedondo(Model.VendidoMes)</span>
+    </div>
+    @if (Model.EsAdmin)
+    {
+        <div class="tarjeta kpi">
+            <div class="kpi-icono ambar"><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Subida" /></svg></div>
+            <span class="kpi-titulo">Ganancia en @mes</span>
+            <span class="kpi-valor">@Formato.CordobasRedondo(Model.GananciaMes)</span>
+        </div>
+    }
+</div>
+
+<section class="tarjeta" aria-labelledby="titulo-ventas">
+    <h2 id="titulo-ventas" class="solo-lector">Lista de ventas</h2>
+
+    <form method="get" asp-action="Index" class="filtros">
+        <div class="campo">
+            <label for="desde">Desde</label>
+            <input id="desde" name="desde" type="date" value="@(Model.Desde?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="campo">
+            <label for="hasta">Hasta</label>
+            <input id="hasta" name="hasta" type="date" value="@(Model.Hasta?.ToString("yyyy-MM-dd"))" />
+        </div>
+        @if (Model.EsAdmin)
+        {
+            <div class="campo">
+                <label for="vendedor">Vendedor</label>
+                <select id="vendedor" name="vendedor">
+                    <option value="">Todos</option>
+                    @foreach (var u in Model.Vendedores)
+                    {
+                        <option value="@u.IdUsuario" selected="@(Model.IdVendedor == u.IdUsuario)">@(u.NombreCompleto ?? u.NombreUsuario)</option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="campo">
+            <label for="estado">Mostrar</label>
+            <select id="estado" name="estado">
+                <option value="Activa">Pagadas</option>
+                <option value="Anulada" selected="@(Model.Estado == "Anulada")">Anuladas</option>
+                <option value="Todas" selected="@(Model.Estado == "Todas")">Todas</option>
+            </select>
+        </div>
+        <div class="filtros-botones">
+            <button type="submit" class="boton boton-principal chico">Filtrar</button>
+            @if (hayFiltros)
+            {
+                <a class="boton boton-secundario chico" asp-action="Index">Quitar filtros</a>
+            }
+        </div>
+    </form>
+
+    <p class="texto-suave">
+        @Model.TotalEncontradas.ToString("N0") @(Model.TotalEncontradas == 1 ? "venta" : "ventas")
+        · Total vendido: <strong>@Formato.Cordobas(Model.TotalVendido)</strong>
+        @if (Model.EsAdmin)
+        {
+            <span>· Ganancia: <strong>@Formato.Cordobas(Model.TotalGanancia)</strong></span>
+        }
+    </p>
+    @if (Model.TotalEncontradas > Model.Ventas.Count)
+    {
+        <p class="texto-pequeno">Se muestran las @Model.Ventas.Count más recientes. Use las fechas para ver otras.</p>
+    }
+
+    @if (Model.Ventas.Count == 0)
+    {
+        <p class="vacio-lista">No hay ventas con esos filtros.</p>
+    }
+    else
+    {
+        <div class="tabla-caja">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>N.º</th>
+                        <th>Fecha y hora</th>
+                        @if (Model.EsAdmin)
+                        {
+                            <th>Vendedor</th>
+                        }
+                        <th class="derecha">Artículos</th>
+                        <th class="derecha">Total</th>
+                        @if (Model.EsAdmin)
+                        {
+                            <th class="derecha">Ganancia</th>
+                        }
+                        <th><span class="solo-lector">Acciones</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Ventas)
+                    {
+                        <tr class="@(v.Anulada ? "fila-inactiva" : "")">
+                            <td class="texto-suave">
+                                #@v.IdVenta
+                                @if (v.Anulada)
+                                {
+                                    <span class="insignia rojo">Anulada</span>
+                                }
+                            </td>
+                            <td class="sin-saltos">@Formato.FechaHora(v.FechaVenta)</td>
+                            @if (Model.EsAdmin)
+                            {
+                                <td>@(v.VendedorNombre ?? v.Vendedor)</td>
+                            }
+                            <td class="derecha">
+                                @v.TotalUnidades.ToString("N0")
+                                <span class="texto-pequeno">@v.TotalLineas @(v.TotalLineas == 1 ? "artículo" : "artículos")</span>
+                            </td>
+                            <td class="derecha fuerte sin-saltos">@Formato.Cordobas(v.Total)</td>
+                            @if (Model.EsAdmin)
+                            {
+                                <td class="derecha sin-saltos">@Formato.Cordobas(v.Ganancia)</td>
+                            }
+                            <td>
+                                <div class="acciones">
+                                    <a class="boton-tabla" asp-action="Detalle" asp-route-id="@v.IdVenta" title="Ver comprobante" aria-label="Ver la venta @v.IdVenta">
+                                        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ver" /></svg>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

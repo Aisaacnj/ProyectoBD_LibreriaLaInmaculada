@@ -24,6 +24,7 @@ LibreriaLaInmaculada/
 │   │   ├── Home/         Inicio del administrador y del vendedor
 │   │   ├── Inventario/   Lista de artículos, formulario y categorías
 │   │   ├── Compras/      Lista, registrar compra y detalle
+│   │   ├── Ventas/       Vender (punto de venta), lista y comprobante
 │   │   ├── Proveedores/  Lista y formulario de proveedores
 │   │   └── Usuarios/     Lista, nuevo, editar y cambiar contraseña
 │   ├── ModelosDeVista/   Los datos que cada pantalla necesita mostrar
@@ -68,7 +69,8 @@ Cada carpeta tiene su propio `LEEME.md` con más detalle.
 | Proveedores | Administrador | ✅ Listo |
 | Usuarios: crear, editar rol, cambiar contraseña, activar/desactivar | Administrador | ✅ Listo |
 | Compras: registrar facturas de proveedores (con IVA, buscador de artículos y creación rápida de artículos nuevos), ver detalle y anular | Administrador | ✅ Listo |
-| Vender y Ventas | Los dos roles | 🚧 Pendiente |
+| Vender: punto de venta con buscador, carrito, total y vuelto; comprobante imprimible | Los dos roles | ✅ Listo |
+| Ventas: el vendedor ve las suyas; el administrador ve todas con su ganancia, anula y registra devoluciones | Los dos roles | ✅ Listo |
 | Pérdidas, Reportes | Administrador | 🚧 Pendiente |
 
 Reglas que ya cumple el sistema:
@@ -76,6 +78,8 @@ Reglas que ya cumple el sistema:
 - Nada se borra: artículos, categorías, proveedores y usuarios se **desactivan** (columna `Activo`), así el historial se conserva.
 - Una compra registrada **suma** al stock y guarda su costo como el nuevo costo del artículo; anularla **resta** esas unidades (si ya se vendieron, no deja anular).
 - Los nombres no se repiten (artículos, categorías, proveedores, usuarios). Antes de comparar y guardar, el sistema quita los espacios de sobra.
+- Al vender, el precio y el costo se leen de la base en ese momento (nunca del navegador) y se guardan en la línea de la venta: si luego cambia el precio, las ventas viejas no cambian. No se puede vender más de lo que hay en stock.
+- Devolución parcial: la venta original se anula y se crea otra con lo que el cliente se quedó, con los mismos precios, vendedor y fecha.
 - Nadie puede desactivarse a sí mismo ni quitarse su propio rol de administrador, y siempre queda al menos un administrador activo.
 
 ## Reglas para programar los siguientes módulos

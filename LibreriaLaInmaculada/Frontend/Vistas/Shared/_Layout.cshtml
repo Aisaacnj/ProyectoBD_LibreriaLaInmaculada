@@ -43,8 +43,8 @@
                 <a class="@Clase(EsActual("Ventas", "Nueva"))" aria-current="@Aria(EsActual("Ventas", "Nueva"))" asp-controller="Ventas" asp-action="Nueva">
                     <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Vender" /></svg><span>Vender</span>
                 </a>
-                <a class="@Clase(EsActual("Ventas", "Index"))" aria-current="@Aria(EsActual("Ventas", "Index"))" asp-controller="Ventas" asp-action="Index">
-                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ventas" /></svg><span>Ventas</span>
+                <a class="@Clase(EsActual("Ventas") && !EsActual("Ventas", "Nueva"))" aria-current="@Aria(EsActual("Ventas") && !EsActual("Ventas", "Nueva"))" asp-controller="Ventas" asp-action="Index">
+                    <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Ventas" /></svg><span>@(esAdmin ? "Ventas" : "Mis ventas")</span>
                 </a>
                 <a class="@Clase(EsActual("Inventario"))" aria-current="@Aria(EsActual("Inventario"))" asp-controller="Inventario" asp-action="Index">
                     <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Inventario" /></svg><span>Inventario</span>

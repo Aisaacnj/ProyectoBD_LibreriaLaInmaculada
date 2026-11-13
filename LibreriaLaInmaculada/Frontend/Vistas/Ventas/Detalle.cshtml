@@ -1,0 +1,176 @@
+@model VentaDetalleViewModel
+@{
+    var v = Model.Venta;
+    var unidades = v.Lineas.Sum(l => l.Cantidad);
+    ViewData["Title"] = $"Venta #{v.IdVenta}";
+    ViewData["Descripcion"] = v.Anulada
+        ? "Venta anulada: sus unidades regresaron al inventario y no cuenta en los totales."
+        : $"{unidades:N0} unidades · {Formato.Cordobas(v.Total)}";
+    ViewData["Subtitulo"] = Formato.FechaLarga(v.FechaVenta);
+}
+
+@section BannerDerecha {
+    <div class="banner-acciones">
+        <a class="banner-accion secundaria" asp-action="Index">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Volver" /></svg>
+            Ver ventas
+        </a>
+        <button type="button" class="banner-accion secundaria" onclick="window.print()">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Imprimir" /></svg>
+            Imprimir
+        </button>
+        <a class="banner-accion" asp-action="Nueva">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Vender" /></svg>
+            Nueva venta
+        </a>
+    </div>
+}
+
+<div class="fila">
+    @* ---------- Comprobante (es lo único que sale al imprimir) ---------- *@
+    <section class="tarjeta crece ticket" aria-labelledby="titulo-ticket">
+        <div class="ticket-encabezado">
+            <div>
+                <h2 id="titulo-ticket">Librería La Inmaculada</h2>
+                <span class="texto-pequeno">Comprobante de venta · no es factura fiscal</span>
+            </div>
+            @if (v.Anulada)
+            {
+                <span class="insignia rojo">Anulada</span>
+            }
+            else
+            {
+                <span class="insignia verde">Pagada</span>
+            }
+        </div>
+
+        <dl class="ticket-datos">
+            <div><dt>Venta</dt><dd>#@v.IdVenta</dd></div>
+            <div><dt>Fecha y hora</dt><dd>@Formato.FechaHora(v.FechaVenta)</dd></div>
+            <div><dt>Atendió</dt><dd>@(v.VendedorNombre ?? v.Vendedor)</dd></div>
+        </dl>
+
+        <div class="tabla-caja">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th class="derecha">Cant.</th>
+                        <th>Artículo</th>
+                        <th class="derecha">Precio</th>
+                        <th class="derecha">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in v.Lineas)
+                    {
+                        <tr>
+                            <td class="derecha">@l.Cantidad.ToString("N0")</td>
+                            <td class="fuerte">@l.Articulo</td>
+                            <td class="derecha sin-saltos">@Formato.Cordobas(l.PrecioUnitario)</td>
+                            <td class="derecha fuerte sin-saltos">@Formato.Cordobas(l.Total)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <dl class="totales">
+            <div><dt>Unidades</dt><dd>@unidades.ToString("N0")</dd></div>
+            <div class="total-final"><dt>Total</dt><dd>@Formato.Cordobas(v.Total)</dd></div>
+            @if (Model.PagaCon is not null)
+            {
+                <div><dt>Paga con</dt><dd>@Formato.Cordobas(Model.PagaCon.Value)</dd></div>
+                <div class="vuelto-ticket"><dt>Vuelto</dt><dd>@Formato.Cordobas(Model.Vuelto!.Value)</dd></div>
+            }
+        </dl>
+
+        <p class="ticket-gracias">¡Gracias por su compra!</p>
+    </section>
+
+    @* ---------- Solo en pantalla ---------- *@
+    <div class="columna-lateral no-imprimir">
+        @if (Model.EsAdmin)
+        {
+            <section class="tarjeta" aria-labelledby="titulo-ganancia">
+                <h2 id="titulo-ganancia">Ganancia de esta venta</h2>
+                <div class="tabla-caja">
+                    <table class="tabla">
+                        <thead>
+                            <tr><th>Artículo</th><th class="derecha">Costo unit.</th><th class="derecha">Ganancia</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var l in v.Lineas)
+                            {
+                                <tr>
+                                    <td>@l.Articulo</td>
+                                    <td class="derecha sin-saltos">@Formato.Cordobas(l.CostoUnitario)</td>
+                                    <td class="derecha sin-saltos @(l.Ganancia < 0 ? "negativo" : "")">@Formato.Cordobas(l.Ganancia)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <dl class="totales">
+                    <div class="total-final"><dt>Ganancia</dt><dd>@Formato.Cordobas(v.Ganancia)</dd></div>
+                </dl>
+                <p class="texto-pequeno">Calculada con el costo sin IVA que tenía cada artículo al momento de la venta.</p>
+            </section>
+        }
+
+        @if (v.Anulada)
+        {
+            <div class="nota">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Alerta" /></svg>
+                <span>Esta venta está anulada: sus unidades ya regresaron al inventario y no cuenta en los totales ni en los reportes.</span>
+            </div>
+        }
+        else if (Model.EsAdmin)
+        {
+            <section class="tarjeta" aria-labelledby="titulo-devolucion">
+                <h2 id="titulo-devolucion">Devolución del cliente</h2>
+                <p class="texto-suave">
+                    Escriba cuántas unidades devuelve. Regresan al inventario, esta venta se anula y se crea una
+                    venta nueva con lo que el cliente se queda, con los mismos precios.
+                </p>
+                <form method="post" asp-action="Devolver" asp-route-id="@v.IdVenta" class="formulario"
+                      onsubmit="return confirm('¿Registrar la devolución? La venta #@(v.IdVenta) se anulará y se creará una nueva con lo que el cliente se queda.');">
+                    @foreach (var l in v.Lineas)
+                    {
+                        <div class="fila-devolucion">
+                            <label for="dev-@l.IdArticulo">
+                                @l.Articulo
+                                <span class="texto-pequeno">Se llevó @l.Cantidad</span>
+                            </label>
+                            <input id="dev-@l.IdArticulo" name="devolver[@l.IdArticulo]" type="number"
+                                   min="0" max="@l.Cantidad" step="1" value="0" inputmode="numeric" />
+                        </div>
+                    }
+                    <button type="submit" class="boton boton-secundario chico">Registrar devolución</button>
+                </form>
+                <p class="texto-pequeno">Si algo regresó dañado y no se puede volver a vender, regístrelo después en Pérdidas.</p>
+            </section>
+
+            <section class="tarjeta tarjeta-peligro" aria-labelledby="titulo-anular">
+                <h2 id="titulo-anular">Anular venta</h2>
+                <p class="texto-suave">
+                    Úsela si la venta se registró por error o el cliente devuelve todo. Las @unidades.ToString("N0") unidades
+                    regresan al inventario. La venta no se borra: queda marcada como anulada.
+                </p>
+                <form method="post" asp-action="Anular" asp-route-id="@v.IdVenta"
+                      onsubmit="return confirm('¿Anular la venta #@(v.IdVenta)? Sus unidades regresarán al inventario.');">
+                    <button type="submit" class="boton boton-peligro chico">
+                        <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Desactivar" /></svg>
+                        Anular venta
+                    </button>
+                </form>
+            </section>
+        }
+        else
+        {
+            <div class="nota">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="@Iconos.Candado" /></svg>
+                <span>Si el cliente devuelve algo o la venta se registró por error, avise a los dueños: ellos la anulan o registran la devolución.</span>
+            </div>
+        }
+    </div>
+</div>

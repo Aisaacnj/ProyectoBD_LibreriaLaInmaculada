@@ -238,7 +238,7 @@
         const redondear = n => Math.round((n + Number.EPSILON) * 100) / 100;
         const cordobas = n => 'C$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const numero = el => parseFloat(el.value) || 0;
-        const clave = texto => (texto || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        const clave = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();   // sin tildes ni espacios de más
 
         // Nombre del artículo → { id, costo }
         const articulos = new Map();
